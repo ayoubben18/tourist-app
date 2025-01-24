@@ -1,0 +1,1 @@
+ALTER TABLE "guide_profiles" ADD COLUMN "authorization_document" text NOT NULL;

@@ -786,6 +786,7 @@ export const guide_profiles = pgTable("guide_profiles", {
     .references(() => usersInAuth.id)
     .primaryKey(),
   verification_status: guide_status("verification_status"),
+  authorization_document: uuid("authorization_document").references(() => objectsInStorage.id).notNull(),
   rating: decimal("rating", { precision: 3, scale: 2 }),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
   available_hours: json("available_hours"),
