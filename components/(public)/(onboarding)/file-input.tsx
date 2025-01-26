@@ -15,6 +15,7 @@ interface FileInputProps {
   accept?: string;
   required?: boolean;
   className?: string;
+  error?: string;
 }
 
 const FileInput = ({
@@ -25,6 +26,7 @@ const FileInput = ({
   accept,
   required,
   className,
+  error
 }: FileInputProps) => {
   const [isDragging, setIsDragging] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -125,6 +127,7 @@ const FileInput = ({
           ref={fileInputRef} // Ref to the file input
         />
       </div>
+      {error && <p className="text-red-500 text-sm">{error}</p>}
     </div>
   );
 };

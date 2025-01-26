@@ -5,19 +5,17 @@ import { z } from "zod";
 import { toast } from "sonner";
 import MultiStepForm, { FormStep } from "@/components/ui/multi-step-form";
 import { Button } from "@/components/ui/button";
-
-// Validation schema
-const applicationSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits"),
-  yearsOfExperience: z.string().regex(/^\d+$/, "Experience must be a number"),
-  hourlyRate: z.string().regex(/^\d+$/, "hourly rate must be a number"),
-  authorisation: z.string().optional(),
-});
+import { GuideOnboardingSchema } from "@/utils/schemas";
+import { useMutation } from "@tanstack/react-query";
+import { guideOnboarding } from "@/services/database/onboarding";
 
 export default function GuideApplicationForm() {
+  const { mutateAsync, isPending, error } = useMutation({
+    mutationFn: guideOnboarding,
+  });
+
+  const [success, setSuccess] = React.useState(false)
+
   const formSteps: FormStep[] = [
     {
       id: "personal-info",
@@ -64,10 +62,27 @@ export default function GuideApplicationForm() {
       ],
     },
     {
-      id: "guide-details",
+      id: "profilePicture",
       level: 2,
+      title: "Profile Picture (Optional)",
+      description:
+        "You can upload a profile picture to personalize your account. But it is not required.",
+      fields: [
+        {
+          id: "profile_picture",
+          label: "Upload Profile Picture",
+          type: "file",
+          accept: ".png,.jpeg,.jpg",
+          required: false,
+        },
+      ],
+    },
+    {
+      id: "guide-details",
+      level: 3,
       title: "Professional Information",
-      description: "Provide details about your work experience and hourly rate.",
+      description:
+        "Provide details about your work experience and hourly rate.",
       fields: [
         {
           id: "yearsOfExperience",
@@ -89,43 +104,68 @@ export default function GuideApplicationForm() {
       id: "authorisation",
       level: 4,
       title: "Authorisation document",
-      description: "Please upload your authorization document as proof of legitimacy.",
+      description:
+        "Please upload your authorization document as proof of legitimacy.",
       fields: [
         {
-          id: "authorisation",
+          id: "authorization_document",
           label: "Authorisation document",
           type: "file",
           accept: ".pdf,.doc,.docx,.png,.jpg,.jpeg",
           required: true,
-        }
+        },
+      ],
+    },
+    {
+      id: "password",
+      level: 5,
+      title: "Secure Your Account with a Strong Password",
+      description:
+        "Create a secure password that meets the required criteria to protect your account from unauthorized access.",
+      fields: [
+        {
+          id: "password",
+          label: "Password",
+          type: "password",
+          required: true,
+        },
       ],
     },
   ];
 
   const handleComplete = (
-    selections: Record<number, Record<string, string>>
+    selections: Record<number, Record<string, string | File>>
   ) => {
-    console.log("Form Selections:", selections); 
+    console.log("Form Selections:", selections);
+
+    const formData = new FormData();
+
+    Object.values(selections).forEach((stepData) => {
+      Object.entries(stepData).forEach(([key, value]) => {
+        if (value instanceof File) {
+          formData.append(key, value);
+        } else {
+          formData.append(key, value.toString());
+        }
+      });
+    });
+  
 
     try {
-      // Flatten selections
-      const formData = Object.values(selections).reduce(
-        (acc, step) => ({
-          ...acc,
-          ...step,
-        }),
-        {}
-      );
 
-      console.log("Flattened Form Data:", formData);
-
-      // Validate using Zod
-      const validatedData = applicationSchema.parse(formData);
+      const validatedData = GuideOnboardingSchema.parse(Object.fromEntries(formData.entries()));
       console.log("Validated Data:", validatedData);
 
-      // Simulate form submission
-      toast.success("Application Submitted", {
-        description: `Thank you, ${validatedData.firstName} ${validatedData.lastName}!`,
+      toast.promise(mutateAsync(validatedData), {
+        loading: "Creating account...",
+        success: () => {
+          // router.push(...);
+          setSuccess(true);
+          return "Please check your email for verification.";
+        },
+        error: (error) => {
+          return "Failed to create account";
+        },
       });
 
       return true;
@@ -141,7 +181,9 @@ export default function GuideApplicationForm() {
 
   const finalStep = (
     <div className="text-center space-y-4">
-      <h2 className="text-2xl font-bold">Your submission has been received successfully!</h2>
+      <h2 className="text-2xl font-bold">
+        Your submission has been received successfully!
+      </h2>
       <p>Our team will review your information and get back to you soon.</p>
       <Button>Go back to home page</Button>
     </div>
@@ -153,6 +195,8 @@ export default function GuideApplicationForm() {
       formSteps={formSteps}
       onComplete={handleComplete}
       finalStep={finalStep}
+      isPending={isPending}
+      isSuccess={success}
     />
   );
 }

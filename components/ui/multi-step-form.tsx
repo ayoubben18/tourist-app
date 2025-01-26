@@ -16,12 +16,12 @@ import FileInput from "../(public)/(onboarding)/file-input";
 
 interface FormStore {
   currentStep: number;
-  selections: Record<number | string, Record<string, string>>;
+  selections: Record<number | string, Record<string, string | File>>;
   setStep: (step: number) => void;
   setSelection: (
     step: number,
     fieldId: string,
-    value: string,
+    value: string | File,
     totalSteps: number
   ) => void;
   reset: () => void;
@@ -60,31 +60,40 @@ export type FormStep = {
 export type FormField = {
   id: string;
   label: string;
-  type: "text" | "email" | "number" | "tel" | "file"; // Add "file" type
+  type: "text" | "email" | "number" | "tel" | "file" | "password";
   placeholder?: string;
   required?: boolean;
-  accept?: string; // Optional: Specify accepted file types (e.g., "image/*", ".pdf")
+  accept?: string;
 };
 
 export interface MultiStepFormProps {
   title?: React.ReactNode;
   formSteps: FormStep[];
   onComplete: (
-    selections: Record<number | string, Record<string, string>>
+    selections: Record<number | string, Record<string, string | File>>
   ) => boolean;
   children?: React.ReactNode;
   finalStep?: React.ReactNode;
   className?: string;
+  isPending?: boolean;
+  isSuccess?: boolean;
 }
 
 const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
   (
-    { title, formSteps, onComplete, children, finalStep, className, ...props },
+    {
+      title,
+      formSteps,
+      onComplete,
+      children,
+      finalStep,
+      className,
+      isPending,
+      isSuccess,
+      ...props
+    },
     ref
   ) => {
-    const [localFiles, setLocalFiles] = React.useState<
-      Record<string, File | null>
-    >({});
     const { currentStep, setStep, selections } = useFormStore();
     const [canFinish, setCanFinish] = React.useState(false);
     const [showSuccess, setShowSuccess] = React.useState(false);
@@ -92,7 +101,7 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
       {}
     );
     const [localValues, setLocalValues] = React.useState<
-      Record<string, string>
+      Record<string, string | File | null>
     >({});
 
     React.useEffect(() => {
@@ -106,66 +115,77 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
       }
       if (currentStep > 0) {
         setStep(currentStep - 1);
-        // Reset local values when going back
         setLocalValues({});
       }
     };
 
-    const handleInputChange = (fieldId: string, value: string | File | null) => {
+    const handleInputChange = (
+      fieldId: string,
+      value: string | File | null
+    ) => {
       const currentStepFields = formSteps[currentStep].fields;
       const field = currentStepFields.find((f) => f.id === fieldId);
-    
-      if (field?.type === "file") {
-        // Handle file input
-        setLocalFiles((prev) => ({
-          ...prev,
-          [fieldId]: value as File | null, // Allow null values
-        }));
+
+      if (!field) return;
+
+      if (field.type === "file") {
+        const fileValue = value as File | null;
+        if (fileValue) {
+          setLocalValues((prev) => ({ ...prev, [fieldId]: fileValue }));
+          useFormStore
+            .getState()
+            .setSelection(currentStep, fieldId, fileValue, formSteps.length);
+        }
       } else {
-        // Handle text/number/email/tel input
-        setLocalValues((prev) => ({
-          ...prev,
-          [fieldId]: value as string,
-        }));
-    
-        // Validate field
-        if (field?.required && !(value as string).trim()) {
-          setFormErrors((prev) => ({
-            ...prev,
-            [fieldId]: `${field.label} is required`,
-          }));
+        const stringValue = value as string;
+        setLocalValues((prev) => ({ ...prev, [fieldId]: stringValue }));
+        useFormStore
+          .getState()
+          .setSelection(currentStep, fieldId, stringValue, formSteps.length);
+      }
+
+      // Validation
+      if (field.required) {
+        if (field.type === "file") {
+          if (!value) {
+            setFormErrors((prev) => ({
+              ...prev,
+              [fieldId]: `${field.label} is required`,
+            }));
+          } else {
+            setFormErrors((prev) => {
+              const newErrors = { ...prev };
+              delete newErrors[fieldId];
+              return newErrors;
+            });
+          }
         } else {
-          setFormErrors((prev) => {
-            const newErrors = { ...prev };
-            delete newErrors[fieldId];
-            return newErrors;
-          });
+          if (!(value as string)?.trim()) {
+            setFormErrors((prev) => ({
+              ...prev,
+              [fieldId]: `${field.label} is required`,
+            }));
+          } else {
+            setFormErrors((prev) => {
+              const newErrors = { ...prev };
+              delete newErrors[fieldId];
+              return newErrors;
+            });
+          }
         }
       }
-    
-      // Update selections in the store
-      const setSelection = useFormStore.getState().setSelection;
-      setSelection(
-        currentStep,
-        fieldId,
-        field?.type === "file" ? (value ? (value as File).name : "") : (value as string),
-        formSteps.length
-      );
-    
-      // Check if all required fields are filled (only for the last step)
+
+      // Update completion state
       if (isLastStep) {
-        const allRequiredFieldsFilled = currentStepFields.every((field) => {
-          if (field.required) {
-            if (field.type === "file") {
-              return localFiles[field.id] !== null;
-            } else {
-              return localValues[field.id] && localValues[field.id].trim();
-            }
-          }
-          return true;
+        const allRequiredFilled = currentStepFields.every((f) => {
+          if (!f.required) return true;
+          const val =
+            f.id === fieldId ? value : selections[currentStep]?.[f.id];
+          return f.type === "file"
+            ? val instanceof File
+            : !!val?.toString().trim();
         });
-    
-        setCanFinish(allRequiredFieldsFilled);
+        setCanFinish(allRequiredFilled);
       }
     };
 
@@ -173,11 +193,14 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
       const currentStepFields = formSteps[currentStep].fields;
       const newErrors: Record<string, string> = {};
 
-      // Validate all fields in the current step
       currentStepFields.forEach((field) => {
-        const value = localValues[field.id] || "";
-        if (field.required && (!value || !value.trim())) {
-          newErrors[field.id] = `${field.label} is required`;
+        const value = localValues[field.id];
+        if (field.required) {
+          if (field.type === "file" && !(value instanceof File)) {
+            newErrors[field.id] = `${field.label} is required`;
+          } else if (typeof value === "string" && !value.trim()) {
+            newErrors[field.id] = `${field.label} is required`;
+          }
         }
       });
 
@@ -186,29 +209,14 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
         return;
       }
 
-      // Save current step values
-      const setSelection = useFormStore.getState().setSelection;
-      currentStepFields.forEach((field) => {
-        setSelection(
-          currentStep,
-          field.id,
-          localValues[field.id] || "",
-          formSteps.length
-        );
-      });
-
-      // Move to the next step
       setLocalValues({});
-      const nextStep = currentStep + 1;
-      setStep(nextStep);
+      setStep(currentStep + 1);
     };
 
     const handleComplete = () => {
       if (finalStep) {
         const isValid = onComplete(selections);
-        if (isValid) {
-          setShowSuccess(true);
-        }
+        if (isValid && isSuccess) setShowSuccess(true);
       } else {
         onComplete(selections);
       }
@@ -216,28 +224,28 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
 
     const isLastStep = currentStep === formSteps.length - 1;
     const isSuccessStep = currentStep === formSteps.length;
-    const hasLastStepSelection = selections[formSteps.length - 1] !== undefined;
 
     React.useEffect(() => {
-      //   console.log("Current Step:", currentStep);
-      //   console.log("Local Values:", localValues);
-      //   console.log("Selections:", selections);
-      //   console.log("Can Finish:", canFinish);
-
       const stepSelections = selections[currentStep] || {};
-      setLocalValues(stepSelections);
+      const newLocalValues: Record<string, string | File> = {};
+
+      Object.entries(stepSelections).forEach(([key, value]) => {
+        newLocalValues[key] = value;
+      });
+
+      setLocalValues(newLocalValues);
 
       if (isLastStep) {
-        const currentStepFields = formSteps[currentStep].fields;
-        const allRequiredFieldsFilled = currentStepFields.every((field) => {
-          if (field.required) {
-            return stepSelections[field.id] && stepSelections[field.id].trim();
+        const allRequiredFilled = formSteps[currentStep].fields.every(
+          (field) => {
+            if (!field.required) return true;
+            const value = stepSelections[field.id];
+            return field.type === "file"
+              ? value instanceof File
+              : !!value?.toString().trim();
           }
-          return true;
-        });
-
-        console.log("All Required Fields Filled:", allRequiredFieldsFilled);
-        setCanFinish(allRequiredFieldsFilled);
+        );
+        setCanFinish(allRequiredFilled);
       }
     }, [currentStep, isLastStep, selections, formSteps]);
 
@@ -307,7 +315,7 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.15 }}
               >
-                {showSuccess ? (
+                {showSuccess && isSuccess? (
                   finalStep
                 ) : isSuccessStep && children ? (
                   children
@@ -319,12 +327,13 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
                           <FileInput
                             id={field.id}
                             label={field.label}
-                            value={localFiles[field.id] || null}
+                            value={(localValues[field.id] as File) || null}
                             onChange={(file) =>
-                              handleInputChange(field.id, file!)
+                              handleInputChange(field.id, file)
                             }
                             accept={field.accept}
                             required={field.required}
+                            error={formErrors[field.id]}
                           />
                         ) : (
                           <>
@@ -333,7 +342,7 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
                               id={field.id}
                               type={field.type}
                               placeholder={field.placeholder}
-                              value={localValues[field.id] || ""}
+                              value={(localValues[field.id] as string) || ""}
                               onChange={(e) =>
                                 handleInputChange(field.id, e.target.value)
                               }
@@ -357,16 +366,48 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
 
             {!isSuccessStep && (
               <div className="flex justify-end mt-8">
-                {isLastStep ? (
-                  <Button
-                    onClick={handleComplete}
-                    disabled={!canFinish}
-                    className={showSuccess ? `hidden` : ""}
-                  >
-                    Submit
-                  </Button>
-                ) : (
-                  <Button onClick={handleNextStep}>Next Step</Button>
+                {!isSuccessStep && (
+                  <div className="flex justify-end mt-8">
+                    {isLastStep ? (
+                      <Button
+                        onClick={handleComplete}
+                        disabled={!canFinish || isPending} // Add disabled state
+                        className={showSuccess && isSuccess ? `hidden` : ""}
+                      >
+                        {isPending ? ( // Show spinner when pending
+                          <div className="flex items-center gap-2">
+                            <svg
+                              className="animate-spin h-5 w-5 text-current"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              xmlns="http://www.w3.org/2000/svg"
+                            >
+                              <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                              />
+                              <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                              />
+                            </svg>
+                            Submitting...
+                          </div>
+                        ) : (
+                          "Submit"
+                        )}
+                      </Button>
+                    ) : (
+                      <Button onClick={handleNextStep} disabled={isPending}>
+                        {isPending ? "Please wait..." : "Next Step"}
+                      </Button>
+                    )}
+                  </div>
                 )}
               </div>
             )}

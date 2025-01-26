@@ -4,17 +4,18 @@ import * as React from "react";
 import { z } from "zod";
 import { toast } from "sonner";
 import MultiStepForm, { FormStep } from "@/components/ui/multi-step-form";
+import { touristOnboardingSchema } from "@/utils/schemas";
+import { useMutation } from "@tanstack/react-query";
+import { touristOnboarding } from "@/services/database/onboarding";
 
-// Validation schema
-const applicationSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().regex(/^\d{10}$/, "Phone must be 10 digits"),
-  profilePicture: z.string().optional(),
-});
 
 export default function JobApplicationForm() {
+
+  const { mutateAsync, isPending, error } = useMutation({
+    mutationFn: touristOnboarding,
+  });
+  const [success, setSuccess] = React.useState(false)
+
   const formSteps: FormStep[] = [
     {
       id: "personal-info",
@@ -68,7 +69,7 @@ export default function JobApplicationForm() {
         "You can upload a profile picture to personalize your account. But it is not required.",
       fields: [
         {
-          id: "profilePicture",
+          id: "profile_picture",
           label: "Upload Profile Picture",
           type: "file",
           accept: ".png,.jpeg,.jpg",
@@ -76,10 +77,24 @@ export default function JobApplicationForm() {
         },
       ],
     },
+    {
+      id: "password",
+      level: 3,
+      title: "Secure Your Account with a Strong Password",
+      description: "Create a secure password that meets the required criteria to protect your account from unauthorized access.",
+      fields: [
+        {
+          id: "password",
+          label: "Password",
+          type: "password",
+          required: true,
+        }
+      ],
+    },
   ];
 
   const handleComplete = (
-    selections: Record<number, Record<string, string>>
+    selections: Record<number, Record<string, string | File>>
   ) => {
     console.log("Form Selections:", selections);
 
@@ -93,15 +108,21 @@ export default function JobApplicationForm() {
         {}
       );
 
-      console.log("Flattened Form Data:", formData);
 
       // Validate using Zod
-      const validatedData = applicationSchema.parse(formData);
+      const validatedData = touristOnboardingSchema.parse(formData);
       console.log("Validated Data:", validatedData);
 
-      // Simulate form submission
-      toast.success("Application Submitted", {
-        description: `Thank you, ${validatedData.firstName} ${validatedData.lastName}!`,
+      toast.promise(mutateAsync(validatedData), {
+        loading: "Creating account...",
+        success: () => {
+          // router.push(...);
+          setSuccess(true);
+          return "Account created successfully! Please check your email for verification.";
+        },
+        error: (error) => {
+          return "Failed to create account";
+        },
       });
 
       return true;
@@ -128,6 +149,8 @@ export default function JobApplicationForm() {
       formSteps={formSteps}
       onComplete={handleComplete}
       finalStep={finalStep}
+      isPending={isPending}
+      isSuccess={success}
     />
   );
 }

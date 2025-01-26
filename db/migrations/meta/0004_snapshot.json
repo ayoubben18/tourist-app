@@ -1,6 +1,6 @@
 {
-  "id": "93320350-93ee-4593-9a96-94ed3db0f3b2",
-  "prevId": "96208aa5-f3e1-4e14-9947-83de2c2901f8",
+  "id": "5993824d-df40-402c-9f9b-f2bd4a227bed",
+  "prevId": "fe918c2d-8a3e-43e2-b3f0-100bc13c97d2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -673,11 +673,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "guide_profiles_guide_id_users_id_fk": {
-          "name": "guide_profiles_guide_id_users_id_fk",
+        "guide_profiles_guide_id_users_additional_info_id_fk": {
+          "name": "guide_profiles_guide_id_users_additional_info_id_fk",
           "tableFrom": "guide_profiles",
-          "tableTo": "users",
-          "schemaTo": "auth",
+          "tableTo": "users_additional_info",
           "columnsFrom": [
             "guide_id"
           ],
@@ -3096,7 +3095,22 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {},
+      "foreignKeys": {
+        "fk_users_additional_info_id_fkey": {
+          "name": "fk_users_additional_info_id_fkey",
+          "tableFrom": "users_additional_info",
+          "tableTo": "users",
+          "schemaTo": "auth",
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_additional_info_id_unique": {

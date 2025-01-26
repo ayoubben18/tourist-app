@@ -1,6 +1,6 @@
 {
-  "id": "330b4147-6c11-4446-abab-56119b649042",
-  "prevId": "ea35cd31-aa20-440f-8704-409fdf1d80ab",
+  "id": "fe918c2d-8a3e-43e2-b3f0-100bc13c97d2",
+  "prevId": "93320350-93ee-4593-9a96-94ed3db0f3b2",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -640,6 +640,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "years_of_experience": {
+          "name": "years_of_experience",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "rating": {
           "name": "rating",
           "type": "numeric(3, 2)",
@@ -667,11 +673,10 @@
       },
       "indexes": {},
       "foreignKeys": {
-        "guide_profiles_guide_id_users_id_fk": {
-          "name": "guide_profiles_guide_id_users_id_fk",
+        "guide_profiles_guide_id_users_additional_info_id_fk": {
+          "name": "guide_profiles_guide_id_users_additional_info_id_fk",
           "tableFrom": "guide_profiles",
-          "tableTo": "users",
-          "schemaTo": "auth",
+          "tableTo": "users_additional_info",
           "columnsFrom": [
             "guide_id"
           ],
@@ -3090,22 +3095,7 @@
         }
       },
       "indexes": {},
-      "foreignKeys": {
-        "fk_users_additional_info_id_fkey": {
-          "name": "fk_users_additional_info_id_fkey",
-          "tableFrom": "users_additional_info",
-          "tableTo": "users",
-          "schemaTo": "auth",
-          "columnsFrom": [
-            "id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
+      "foreignKeys": {},
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_additional_info_id_unique": {

@@ -783,10 +783,11 @@ export const guide_status = pgEnum("guide_status", [
 
 export const guide_profiles = pgTable("guide_profiles", {
   guide_id: uuid("guide_id")
-    .references(() => usersInAuth.id)
+    .references(() => users_additional_info.id)
     .primaryKey(),
   verification_status: guide_status("verification_status"),
   authorization_document: uuid("authorization_document").references(() => objectsInStorage.id).notNull(),
+  years_of_experience: integer("years_of_experience"),
   rating: decimal("rating", { precision: 3, scale: 2 }),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
   available_hours: json("available_hours"),
