@@ -34,13 +34,15 @@ export default function LoginForm() {
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
-    toast.promise(mutateAsync(values), {
-      loading: "Logging in...",
-      success: "Logged in successfully",
-      error: "Failed to log in",
-    });
-
-    router.push("/");
+    try {
+      await mutateAsync(values);
+  
+      toast.success("Logged in successfully");
+  
+      router.push("/");
+    } catch (error) {
+      toast.error("Failed to log in");
+    }
   };
 
   return (
