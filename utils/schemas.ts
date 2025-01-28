@@ -36,3 +36,8 @@ export const GuideOnboardingSchema = z.object({
     .any()
     .refine((file) => file?.size > 0, "Authorization document is required"),
 });
+
+export const signInSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  password: z.string().min(8, "Password must be at least 8 characters long"),
+});
