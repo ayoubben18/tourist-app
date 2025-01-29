@@ -12,7 +12,7 @@ import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import FileInput from "../(public)/(onboarding)/file-input";
+import FileInput from "../(public)/onboarding/file-input";
 
 interface FormStore {
   currentStep: number;
@@ -315,7 +315,7 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.15 }}
               >
-                {showSuccess && isSuccess? (
+                {showSuccess && isSuccess ? (
                   finalStep
                 ) : isSuccessStep && children ? (
                   children
