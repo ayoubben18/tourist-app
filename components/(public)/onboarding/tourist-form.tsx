@@ -9,7 +9,7 @@ import { useMutation } from "@tanstack/react-query";
 import { touristOnboarding } from "@/services/database/onboarding";
 
 
-export default function JobApplicationForm() {
+export default function TouristForm() {
 
   const { mutateAsync, isPending, error } = useMutation({
     mutationFn: touristOnboarding,
