@@ -1,0 +1,3 @@
+ALTER TABLE "guide_profiles" ADD COLUMN "authorization_document" uuid NOT NULL;--> statement-breakpoint
+ALTER TABLE "guide_profiles" ADD COLUMN "years_of_experience" integer;--> statement-breakpoint
+ALTER TABLE "guide_profiles" ADD CONSTRAINT "guide_profiles_authorization_document_objects_id_fk" FOREIGN KEY ("authorization_document") REFERENCES "storage"."objects"("id") ON DELETE no action ON UPDATE no action;
