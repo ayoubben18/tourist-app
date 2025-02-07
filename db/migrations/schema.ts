@@ -22,6 +22,7 @@ import {
   serial,
   point,
   decimal,
+  numeric,
   date,
   time,
   primaryKey,
@@ -733,7 +734,7 @@ export const cities = pgTable("cities", {
   country: text("country").notNull(),
   description: text("description"),
   coordinates: point("coordinates"),
-  image_url: text("image_url")
+  image_url: text("image_url"),
 });
 
 export const points_of_interest = pgTable("points_of_interest", {
@@ -749,33 +750,30 @@ export const points_of_interest = pgTable("points_of_interest", {
 });
 
 export const circuits = pgTable("circuits", {
-  circuit_id: serial("circuit_id").primaryKey(),
+  id: serial("id").primaryKey(),
   creator_id: uuid("creator_id").references(() => usersInAuth.id),
   city_id: integer("city_id").references(() => cities.city_id),
   name: text("name").notNull(),
   description: text("description"),
   estimated_duration: integer("estimated_duration"), // in minutes
+
   distance: decimal("distance", { precision: 10, scale: 2 }), // in kilometers
   created_at: timestamp("created_at").defaultNow(),
   is_public: boolean("is_public").default(true),
-  rating: decimal("rating").default("0")
+  rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
 });
 
-export const circuit_points = pgTable(
-  "circuit_points",
-  {
-    circuit_id: integer("circuit_id")
-      .references(() => circuits.circuit_id)
-      .notNull(),
-    poi_id: integer("poi_id")
-      .references(() => points_of_interest.poi_id)
-      .notNull(),
-    sequence_order: integer("sequence_order").notNull(),
-  },
-  (table) => ({
-    pk: primaryKey(table.circuit_id, table.poi_id),
-  })
-);
+export const circuit_points = pgTable("circuit_points", {
+  id: serial("id").primaryKey().notNull(),
+  circuit_id: integer("circuit_id")
+    .references(() => circuits.id)
+    .notNull(),
+
+  poi_id: integer("poi_id")
+    .references(() => points_of_interest.poi_id)
+    .notNull(),
+  sequence_order: integer("sequence_order").notNull(),
+});
 
 export const guide_status = pgEnum("guide_status", [
   "pending",
@@ -788,7 +786,9 @@ export const guide_profiles = pgTable("guide_profiles", {
     .references(() => users_additional_info.id)
     .primaryKey(),
   verification_status: guide_status("verification_status"),
-  authorization_document: uuid("authorization_document").references(() => objectsInStorage.id).notNull(),
+  authorization_document: uuid("authorization_document")
+    .references(() => objectsInStorage.id)
+    .notNull(),
   years_of_experience: integer("years_of_experience"),
   rating: decimal("rating", { precision: 3, scale: 2 }),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
@@ -805,14 +805,17 @@ export const booking_status = pgEnum("booking_status", [
 
 export const bookings = pgTable("bookings", {
   booking_id: serial("booking_id").primaryKey(),
-  circuit_id: integer("circuit_id").references(() => circuits.circuit_id),
+  circuit_id: integer("circuit_id").references(() => circuits.id),
   tourist_id: uuid("tourist_id").references(() => usersInAuth.id),
   guide_id: uuid("guide_id").references(() => guide_profiles.guide_id),
   booking_date: date("booking_date").notNull(),
   start_time: time("start_time").notNull(),
+
   status: booking_status("status"),
   created_at: timestamp("created_at").defaultNow(),
   total_price: decimal("total_price", { precision: 10, scale: 2 }),
 });
 
-export type Circuit = typeof circuits.$inferSelect
+export type Circuit = typeof circuits.$inferSelect;
+export type UsersAdditionalInfo = typeof users_additional_info.$inferSelect;
+export type City = typeof cities.$inferSelect;
