@@ -36,6 +36,20 @@
       "when": 1737904608255,
       "tag": "0004_confused_wild_child",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1738942823377,
+      "tag": "0005_skinny_quasimodo",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1738948481057,
+      "tag": "0006_clammy_tiger_shark",
+      "breakpoints": true
     }
   ]
 }

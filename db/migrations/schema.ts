@@ -733,6 +733,7 @@ export const cities = pgTable("cities", {
   country: text("country").notNull(),
   description: text("description"),
   coordinates: point("coordinates"),
+  image_url: text("image_url")
 });
 
 export const points_of_interest = pgTable("points_of_interest", {
@@ -757,6 +758,7 @@ export const circuits = pgTable("circuits", {
   distance: decimal("distance", { precision: 10, scale: 2 }), // in kilometers
   created_at: timestamp("created_at").defaultNow(),
   is_public: boolean("is_public").default(true),
+  rating: decimal("rating").default("0")
 });
 
 export const circuit_points = pgTable(
@@ -812,3 +814,5 @@ export const bookings = pgTable("bookings", {
   created_at: timestamp("created_at").defaultNow(),
   total_price: decimal("total_price", { precision: 10, scale: 2 }),
 });
+
+export type Circuit = typeof circuits.$inferSelect

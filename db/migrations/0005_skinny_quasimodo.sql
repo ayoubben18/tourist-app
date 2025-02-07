@@ -1,0 +1,1 @@
+ALTER TABLE "circuits" ADD COLUMN "rating" numeric DEFAULT '0';
