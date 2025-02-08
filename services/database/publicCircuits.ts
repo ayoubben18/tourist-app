@@ -1,3 +1,5 @@
+"use server"
+
 import { db } from "@/db";
 import {
   circuits,
@@ -12,9 +14,9 @@ import { publicAction } from "../server-only";
 const getPublicCircuits = publicAction.create(
   z.object({
     searchTerm: z.string().optional(),
-    duration: z.number().positive().optional(),
-    distance: z.number().positive().optional(),
-    rating: z.number().positive().optional(),
+    duration: z.number().positive().optional().nullable(),
+    distance: z.number().positive().optional().nullable(),
+    rating: z.number().positive().optional().nullable(),
     sortBy: z.string().optional(),
   }),
   async ({
