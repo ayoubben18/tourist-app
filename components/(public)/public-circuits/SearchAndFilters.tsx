@@ -25,6 +25,11 @@ export function SearchAndFilters() {
     sortBy: parseAsString.withDefault(""),
   });
 
+  // Helper function to convert number to string or undefined for Select value
+  const getSelectValue = (value: number) => {
+    return value === 0 ? undefined : value.toString();
+  };
+
   return (
     <div className="space-y-4 mb-8">
       <div className="relative">
@@ -43,15 +48,14 @@ export function SearchAndFilters() {
       </div>
       <div className="flex flex-wrap gap-4">
         <Select
-          value={searchProperties.duration.toString()}
+          value={getSelectValue(searchProperties.duration)}
           onValueChange={(value) =>
-            setSearchProperties({ duration: parseInt(value) })
+            setSearchProperties({ duration: parseInt(value) || 0 })
           }
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Duration" />
           </SelectTrigger>
-
           <SelectContent>
             <SelectItem value="1">1 hour</SelectItem>
             <SelectItem value="2">2 hours</SelectItem>
@@ -61,40 +65,40 @@ export function SearchAndFilters() {
         </Select>
 
         <Select
-          value={searchProperties.distance.toString()}
+          value={getSelectValue(searchProperties.distance)}
           onValueChange={(value) =>
-            setSearchProperties({ distance: parseFloat(value) })
+            setSearchProperties({ distance: parseFloat(value) || 0 })
           }
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Distance" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="0-5">0-5 km</SelectItem>
-            <SelectItem value="5-10">5-10 km</SelectItem>
-            <SelectItem value="10-20">10-20 km</SelectItem>
-            <SelectItem value="20+">20+ km</SelectItem>
+            <SelectItem value="5">0-5 km</SelectItem>
+            <SelectItem value="10">5-10 km</SelectItem>
+            <SelectItem value="20">10-20 km</SelectItem>
+            <SelectItem value="30">20+ km</SelectItem>
           </SelectContent>
         </Select>
 
         <Select
-          value={searchProperties.rating.toString()}
+          value={getSelectValue(searchProperties.rating)}
           onValueChange={(value) =>
-            setSearchProperties({ rating: parseFloat(value) })
+            setSearchProperties({ rating: parseFloat(value) || 0 })
           }
         >
           <SelectTrigger className="w-[180px]">
             <SelectValue placeholder="Rating" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="4+">4+ stars</SelectItem>
-            <SelectItem value="3+">3+ stars</SelectItem>
-            <SelectItem value="2+">2+ stars</SelectItem>
+            <SelectItem value="4">4+ stars</SelectItem>
+            <SelectItem value="3">3+ stars</SelectItem>
+            <SelectItem value="2">2+ stars</SelectItem>
           </SelectContent>
         </Select>
 
         <Select
-          value={searchProperties.sortBy}
+          value={searchProperties.sortBy || undefined}
           onValueChange={(value) => setSearchProperties({ sortBy: value })}
         >
           <SelectTrigger className="w-[180px]">

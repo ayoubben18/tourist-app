@@ -50,6 +50,13 @@
       "when": 1738948481057,
       "tag": "0006_clammy_tiger_shark",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1739007916059,
+      "tag": "0007_smiling_stellaris",
+      "breakpoints": true
     }
   ]
 }
