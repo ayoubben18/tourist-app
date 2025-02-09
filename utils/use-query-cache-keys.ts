@@ -6,6 +6,10 @@ const useQueryCacheKeys = {
     searchProperties.distance,
     searchProperties.rating,
   ],
+  circuitWithPOI: (circuit_id: number) => [
+    "circuitWithPOI",
+    circuit_id
+  ]
 };
 
 export default useQueryCacheKeys;
