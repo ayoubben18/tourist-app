@@ -819,3 +819,5 @@ export const bookings = pgTable("bookings", {
 export type Circuit = typeof circuits.$inferSelect;
 export type UsersAdditionalInfo = typeof users_additional_info.$inferSelect;
 export type City = typeof cities.$inferSelect;
+export type PointOfInterest = typeof points_of_interest.$inferSelect;
+
