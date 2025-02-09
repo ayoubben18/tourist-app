@@ -41,3 +41,14 @@ export const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters long"),
 });
+
+const createCircuitSchema = z.object({
+  city: z.string(),
+  places: z.array(z.string()),
+  startingPlace: z.string(),
+  startTime: z.date(),
+  guideId: z.number().optional(),
+  isPublic: z.boolean(),
+});
+
+export { createCircuitSchema };

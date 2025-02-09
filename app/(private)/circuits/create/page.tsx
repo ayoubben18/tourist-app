@@ -1,14 +1,10 @@
-import { AutoComplete } from "@/components/shared/autocomplete";
+import CreateCircuitStepper from "@/components/(private)/circuit/create";
 import PageWrapper from "@/components/shared/page-wrapper";
-import React from "react";
 
 const page = () => {
   return (
     <PageWrapper>
-      <AutoComplete
-        emptyMessage="no allowed"
-        options={[{ label: "ayoub", value: "ayoub" }]}
-      />
+      <CreateCircuitStepper />
     </PageWrapper>
   );
 };
