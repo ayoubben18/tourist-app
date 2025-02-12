@@ -15,6 +15,7 @@ import {
   parseAsString,
   parseAsFloat,
 } from "nuqs";
+import { Button } from "@/components/ui/button";
 
 export function SearchAndFilters() {
   const [searchProperties, setSearchProperties] = useQueryStates({
@@ -110,6 +111,21 @@ export function SearchAndFilters() {
             <SelectItem value="rating">Highest Rated</SelectItem>
           </SelectContent>
         </Select>
+
+        <Button
+          variant="outline"
+          onClick={() =>
+            setSearchProperties({
+              distance: 0,
+              duration: 0,
+              rating: 0,
+              searchTerm: "",
+              sortBy: "",
+            })
+          }
+        >
+          Reset Filters
+        </Button>
       </div>
     </div>
   );

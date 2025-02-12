@@ -17,9 +17,9 @@ import { PointOfInterestDTO } from "@/dto/points-of-interest-dto";
 const getPublicCircuits = publicAction.create(
   z.object({
     searchTerm: z.string().optional(),
-    duration: z.number().positive().optional().nullable(),
-    distance: z.number().positive().optional().nullable(),
-    rating: z.number().positive().optional().nullable(),
+    duration: z.number().positive().optional(),
+    distance: z.number().positive().optional(),
+    rating: z.number().positive().optional(),
     sortBy: z.string().optional(),
   }),
   async ({
@@ -39,8 +39,8 @@ const getPublicCircuits = publicAction.create(
         : undefined,
       duration
         ? and(
-            gte(circuits.estimated_duration, duration - 10),
-            lte(circuits.estimated_duration, duration + 10)
+            gte(circuits.estimated_duration, duration * 60 - 60),
+            lte(circuits.estimated_duration, duration * 60 + 60)
           )
         : undefined,
 
@@ -132,7 +132,7 @@ const getPointsOfInterestOfCircuit = publicAction.create(
   async ({ circuit_id }): Promise<PointOfInterestDTO[]> => {
     const pois = await db
       .select({
-        poi_id: points_of_interest.poi_id,
+        id: points_of_interest.id,
         name: points_of_interest.name,
         description: points_of_interest.description,
         category: points_of_interest.category,
@@ -145,7 +145,7 @@ const getPointsOfInterestOfCircuit = publicAction.create(
       .from(circuit_points)
       .innerJoin(
         points_of_interest,
-        eq(circuit_points.poi_id, points_of_interest.poi_id)
+        eq(circuit_points.poi_id, points_of_interest.id)
       )
       .where(eq(circuit_points.circuit_id, Number(circuit_id)))
       .orderBy(circuit_points.sequence_order);
@@ -191,7 +191,7 @@ const getCircuitWithPOI = publicAction.create(
       // Get points of interest
       db
         .select({
-          poi_id: points_of_interest.poi_id,
+          id: points_of_interest.id,
           name: points_of_interest.name,
           description: points_of_interest.description,
           category: points_of_interest.category,
@@ -204,7 +204,7 @@ const getCircuitWithPOI = publicAction.create(
         .from(circuit_points)
         .innerJoin(
           points_of_interest,
-          eq(circuit_points.poi_id, points_of_interest.poi_id)
+          eq(circuit_points.id, points_of_interest.id)
         )
         .where(eq(circuit_points.circuit_id, Number(circuit_id)))
         .orderBy(circuit_points.sequence_order),

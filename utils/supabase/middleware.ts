@@ -40,9 +40,21 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (
+    user &&
+    (request.nextUrl.pathname.startsWith("/sign-in") ||
+      request.nextUrl.pathname.startsWith("/tourist-register") ||
+      request.nextUrl.pathname.startsWith("/guide-register"))
+  ) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/public-circuits";
+    return NextResponse.redirect(url);
+  }
+
+  if (
     !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/register") &&
+    !request.nextUrl.pathname.startsWith("/sign-in") &&
+    !request.nextUrl.pathname.startsWith("/tourist-register") &&
+    !request.nextUrl.pathname.startsWith("/guide-register") &&
     !request.nextUrl.pathname.startsWith("/")
   ) {
     // no user, potentially respond by redirecting the user to the login page

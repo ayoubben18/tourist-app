@@ -11,15 +11,15 @@ import {
   Timer,
   Flag,
 } from "lucide-react";
-import { Place } from "../../../../components/shared/Maps";
+import { Place } from "@/components/shared/Maps";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useParams } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
-import { getCircuitWithPOI } from "@/services/database/publicCircuits";
+import { getCircuitWithPOI } from "@/services/database/circuits";
 
 // Dynamically import the Map component with SSR disabled
-const Map = dynamic(() => import("../../../../components/shared/Maps"), {
+const Map = dynamic(() => import("@/components/shared/Maps"), {
   ssr: false,
   loading: () => (
     <div className="w-full h-[400px] flex items-center justify-center bg-gray-100 rounded-lg">
@@ -27,51 +27,6 @@ const Map = dynamic(() => import("../../../../components/shared/Maps"), {
     </div>
   ),
 });
-
-// Places data
-const places: Place[] = [
-  {
-    name: "Eiffel Tower",
-    description: "Iconic iron lattice tower on the Champ de Mars",
-    estimated_duration: 120, // in minutes
-    opening_hours: "09:00 - 23:45 (Daily)",
-    coordinates: [48.8584, 2.2945],
-    category: "Landmark", // added category
-  },
-  {
-    name: "Louvre Museum",
-    description: "World's largest art museum and historic monument",
-    estimated_duration: 180, // in minutes
-    opening_hours: "09:00 - 18:00 (Tue, Wed, Thu, Sat, Sun) | 09:00 - 21:45 (Fri) | Closed on Mon",
-    coordinates: [48.8606, 2.3376],
-    category: "Museum", // added category
-  },
-  {
-    name: "Arc de Triomphe",
-    description: "Iconic monument that honors those who fought for France",
-    estimated_duration: 90, // in minutes
-    opening_hours: "10:00 - 22:30 (Daily)",
-    coordinates: [48.8738, 2.295],
-    category: "Monument", // added category
-  },
-];
-
-
-const circuitWithPOI = {
-  id: 1,
-  name: "Historic Paris Walking Tour",
-  description:
-    "Discover the hidden gems of Paris's historic center, from Notre-Dame to the Latin Quarter.",
-  image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34",
-  estimated_duration: 3,
-  distance: "4.5",
-  creator: "Marie Dubois",
-  creator_avatar: "https://randomuser.me/api/portraits/women/32.jpg",
-  city: "Paris",
-  country: "France",
-  rating: "4.8",
-  pois: places,
-}
 
 const comments = [
   {
@@ -92,22 +47,22 @@ const comments = [
 export default function App() {
   const { id } = useParams();
   const circuit_id = id?.toString();
-  // const {
-  //   data: circuitWithPOI,
-  //   isLoading,
-  //   isError,
-  // } = useQuery({
-  //   queryKey: useQueryCacheKeys.circuitWithPOI(Number(circuit_id)),
-  //   queryFn: () => getCircuitWithPOI({ circuit_id: circuit_id! }),
-  // });
+  const {
+    data: circuitWithPOI,
+    isLoading,
+    isError,
+  } = useQuery({
+    queryKey: useQueryCacheKeys.circuitWithPOI(Number(circuit_id)),
+    queryFn: () => getCircuitWithPOI({ circuit_id: circuit_id! }),
+  });
 
-  // if (isLoading) {
-  //   return <div>Loading...</div>;
-  // }
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
-  // if (isError || !circuitWithPOI) {
-  //   return <div>Error loading circuit data</div>;
-  // }
+  if (isError || !circuitWithPOI) {
+    return <div>Error loading circuit data</div>;
+  }
   return (
     <div className="w-full min-h-screen bg-background p-6">
       <main className="max-w-4xl mx-auto space-y-6">
@@ -134,18 +89,20 @@ export default function App() {
         </div>
 
         <div className="w-full h-[400px] rounded-lg overflow-hidden border">
-          <Map
-            places={circuitWithPOI.pois
-              .filter((poi) => poi.coordinates !== null) // Filter out POIs with null coordinates
-              .map((poi) => ({
-                name: poi.name,
-                description: poi.description || "",
-                estimated_duration: poi.estimated_duration!,
-                opening_hours: poi.opening_hours || "",
-                category: poi.category,
-                coordinates: poi.coordinates as [number, number], // Type assertion since we filtered out null
-              }))}
-          />
+          {circuitWithPOI.pois.length > 0 && (
+            <Map
+              places={circuitWithPOI.pois
+                .filter((poi) => poi.coordinates !== null) // Filter out POIs with null coordinates
+                .map((poi) => ({
+                  name: poi.name,
+                  description: poi.description || "",
+                  estimated_duration: poi.estimated_duration!,
+                  opening_hours: poi.opening_hours || "",
+                  category: poi.category,
+                  coordinates: poi.coordinates as [number, number], // Type assertion since we filtered out null
+                }))}
+            />
+          )}
         </div>
 
         {/* Places section */}

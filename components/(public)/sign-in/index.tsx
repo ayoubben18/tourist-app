@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -22,6 +22,7 @@ import FormError from "@/components/shared/form-error";
 
 export default function LoginForm() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
     defaultValues: {
@@ -31,14 +32,18 @@ export default function LoginForm() {
   });
   const { mutateAsync, isPending, error } = useMutation({
     mutationFn: signIn,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["isAuthenticated"] });
+      queryClient.invalidateQueries({ queryKey: ["userInfo"] });
+    },
   });
 
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     try {
       await mutateAsync(values);
-  
+
       toast.success("Logged in successfully");
-  
+
       router.push("/");
     } catch (error) {
       toast.error("Failed to log in");

@@ -738,7 +738,7 @@ export const cities = pgTable("cities", {
 });
 
 export const points_of_interest = pgTable("points_of_interest", {
-  poi_id: serial("poi_id").primaryKey(),
+  id: serial("id").primaryKey(),
   city_id: integer("city_id").references(() => cities.city_id),
   name: text("name").notNull(),
   description: text("description"),
@@ -770,7 +770,7 @@ export const circuit_points = pgTable("circuit_points", {
     .notNull(),
 
   poi_id: integer("poi_id")
-    .references(() => points_of_interest.poi_id)
+    .references(() => points_of_interest.id)
     .notNull(),
   sequence_order: integer("sequence_order").notNull(),
 });
@@ -816,8 +816,22 @@ export const bookings = pgTable("bookings", {
   total_price: decimal("total_price", { precision: 10, scale: 2 }),
 });
 
+export const comments = pgTable("comments", {
+  id: serial("id").primaryKey(),
+  circuit_id: integer("circuit_id").references(() => circuits.id),
+  user_id: uuid("user_id").references(() => usersInAuth.id),
+  comment: text("comment").notNull(),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
+export const likes = pgTable("likes", {
+  id: serial("id").primaryKey(),
+  circuit_id: integer("circuit_id").references(() => circuits.id),
+  user_id: uuid("user_id").references(() => usersInAuth.id),
+  created_at: timestamp("created_at").defaultNow(),
+});
+
 export type Circuit = typeof circuits.$inferSelect;
 export type UsersAdditionalInfo = typeof users_additional_info.$inferSelect;
 export type City = typeof cities.$inferSelect;
 export type PointOfInterest = typeof points_of_interest.$inferSelect;
-

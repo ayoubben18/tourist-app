@@ -4,6 +4,8 @@ import "./globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import QueryProvider from "@/providers/query-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
+import { Navbar } from "@/components/(public)/home-page/NavBar";
+import Footer from "@/components/shared/footer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,14 +29,18 @@ export default function RootLayout({
 }>) {
   return (
     <QueryProvider>
-      <html lang="en">
-        <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-screen w-full container mx-auto`}
-        >
-          <NuqsAdapter>{children}</NuqsAdapter>
-          <Toaster />
-        </body>
-      </html>
+      <NuqsAdapter>
+        <html lang="en">
+          <body
+            className={`${geistSans.variable} ${geistMono.variable} container mx-auto `}
+          >
+            <Navbar />
+            {children}
+            <Footer />
+            <Toaster />
+          </body>
+        </html>
+      </NuqsAdapter>
     </QueryProvider>
   );
 }

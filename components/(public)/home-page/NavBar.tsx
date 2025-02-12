@@ -12,12 +12,33 @@ import {
   NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
+import { ROUTES } from "@/routes";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/hooks/use-auth";
+import { LogOut } from "lucide-react";
+import { Moon } from "lucide-react";
+
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Button } from "@/components/ui/button";
+import { Settings, User } from "lucide-react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "sonner";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { isUserAuthenticated } from "@/services/database";
 
 const navLinks: { title: string; href: string }[] = [
-  { title: "Home", href: "/" },
-  { title: "News", href: "/news" },
-  { title: "About", href: "/about" },
-  { title: "Contact", href: "/contact" },
+  { title: "Home", href: ROUTES.public.home },
+  { title: "Circuits", href: ROUTES.public.publicCircuits },
+  { title: "About", href: ROUTES.public.about },
+  { title: "Contact", href: ROUTES.public.contact },
 ];
 
 const featureLinks: { title: string; href: string; description: string }[] = [
@@ -44,6 +65,14 @@ const featureLinks: { title: string; href: string; description: string }[] = [
 ];
 
 export function Navbar() {
+  const router = useRouter();
+  const { data: isAuthenticated, isLoading: isAuthenticatedLoading } = useQuery(
+    {
+      queryKey: ["isAuthenticated"],
+      queryFn: () => isUserAuthenticated(),
+    }
+  );
+
   return (
     <header className="w-full bg-white shadow-md">
       <nav className="container mx-auto flex items-center justify-between py-4 px-6">
@@ -65,46 +94,25 @@ export function Navbar() {
                 </Link>
               </NavigationMenuItem>
             ))}
-
-            {/* Dropdown Menu */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger>Features</NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid gap-3 p-4 md:w-[500px] lg:grid-cols-2">
-                  {featureLinks.map((feature) => (
-                    <ListItem
-                      key={feature.title}
-                      title={feature.title}
-                      href={feature.href}
-                    >
-                      {feature.description}
-                    </ListItem>
-                  ))}
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
           </NavigationMenuList>
         </NavigationMenu>
 
         {/* Call to Action Button */}
-        <div className="flex gap-4">
-          <div className="hidden md:block">
-            <Link
-              href="/sign-in"
-              className="bg-white text-purple-600 border border-purple-600 px-4 py-2 rounded-lg hover:bg-purple-100"
+        {isAuthenticated ? (
+          <UserNav />
+        ) : (
+          <div className="flex gap-4">
+            <Button
+              variant={"outline"}
+              onClick={() => router.push(ROUTES.auth.signIn)}
             >
               Sign In
-            </Link>
-          </div>
-          <div className="hidden md:block">
-            <Link
-              href="/tourist-register"
-              className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700"
-            >
+            </Button>
+            <Button onClick={() => router.push(ROUTES.auth.touristRegister)}>
               Sign Up
-            </Link>
+            </Button>
           </div>
-        </div>
+        )}
 
         {/* Mobile Menu */}
         <div className="md:hidden">
@@ -183,26 +191,70 @@ function MobileMenu({
   );
 }
 
-const ListItem = React.forwardRef<
-  React.ElementRef<"a">,
-  React.ComponentPropsWithoutRef<"a">
->(({ className, title, children, ...props }, ref) => {
+export function UserNav() {
+  const router = useRouter();
+  const { userInfo, signOut, isSigningOut } = useAuth();
+  const queryClient = useQueryClient();
+
+  const handleSignOut = async () => {
+    await signOut();
+    queryClient.invalidateQueries({ queryKey: ["isAuthenticated"] });
+    queryClient.invalidateQueries({ queryKey: ["userInfo"] });
+    router.push(ROUTES.public.home);
+  };
+
   return (
-    <li>
-      <NavigationMenuLink asChild>
-        <a
-          ref={ref}
-          className={cn(
-            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-gray-100 focus:bg-gray-100",
-            className
-          )}
-          {...props}
-        >
-          <div className="text-sm font-medium">{title}</div>
-          <p className="text-sm text-gray-600">{children}</p>
-        </a>
-      </NavigationMenuLink>
-    </li>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Avatar className="size-10">
+            <AvatarImage
+              src={userInfo?.avatar_url || ""}
+              alt={userInfo?.full_name || ""}
+            />
+            <AvatarFallback>
+              {userInfo?.full_name
+                ?.split(" ")
+                .map((name: string) => name[0])
+                .join("")
+                .toUpperCase() ?? "??"}
+            </AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" forceMount>
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">
+              {userInfo?.full_name}
+            </p>
+            <p className="text-xs text-muted-foreground">{userInfo?.email}</p>
+          </div>
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onClick={() => router.push(ROUTES.private.profile)}>
+          <User className="mr-2 h-4 w-4" />
+          <span>Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem>
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem>
+          <Moon className="mr-2 h-4 w-4" />
+          <span>Dark Mode</span>
+          {/* Add your dark mode toggle implementation here */}
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={handleSignOut} disabled={isSigningOut}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Sign Out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
-});
-ListItem.displayName = "ListItem";
+}

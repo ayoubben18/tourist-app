@@ -7,14 +7,14 @@ import MultiStepForm, { FormStep } from "@/components/ui/multi-step-form";
 import { Button } from "@/components/ui/button";
 import { GuideOnboardingSchema } from "@/utils/schemas";
 import { useMutation } from "@tanstack/react-query";
-import { guideOnboarding } from "@/services/database/onboarding";
+import { guideOnboarding } from "@/services/database/auth";
 
 export default function GuideApplicationForm() {
   const { mutateAsync, isPending, error } = useMutation({
     mutationFn: guideOnboarding,
   });
 
-  const [success, setSuccess] = React.useState(false)
+  const [success, setSuccess] = React.useState(false);
 
   const formSteps: FormStep[] = [
     {
@@ -149,11 +149,11 @@ export default function GuideApplicationForm() {
         }
       });
     });
-  
 
     try {
-
-      const validatedData = GuideOnboardingSchema.parse(Object.fromEntries(formData.entries()));
+      const validatedData = GuideOnboardingSchema.parse(
+        Object.fromEntries(formData.entries())
+      );
       console.log("Validated Data:", validatedData);
 
       toast.promise(mutateAsync(validatedData), {

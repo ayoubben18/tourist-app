@@ -6,15 +6,13 @@ import { toast } from "sonner";
 import MultiStepForm, { FormStep } from "@/components/ui/multi-step-form";
 import { touristOnboardingSchema } from "@/utils/schemas";
 import { useMutation } from "@tanstack/react-query";
-import { touristOnboarding } from "@/services/database/onboarding";
-
+import { touristOnboarding } from "@/services/database/auth";
 
 export default function TouristForm() {
-
   const { mutateAsync, isPending, error } = useMutation({
     mutationFn: touristOnboarding,
   });
-  const [success, setSuccess] = React.useState(false)
+  const [success, setSuccess] = React.useState(false);
 
   const formSteps: FormStep[] = [
     {
@@ -81,14 +79,15 @@ export default function TouristForm() {
       id: "password",
       level: 3,
       title: "Secure Your Account with a Strong Password",
-      description: "Create a secure password that meets the required criteria to protect your account from unauthorized access.",
+      description:
+        "Create a secure password that meets the required criteria to protect your account from unauthorized access.",
       fields: [
         {
           id: "password",
           label: "Password",
           type: "password",
           required: true,
-        }
+        },
       ],
     },
   ];
@@ -107,7 +106,6 @@ export default function TouristForm() {
         }),
         {}
       );
-
 
       // Validate using Zod
       const validatedData = touristOnboardingSchema.parse(formData);

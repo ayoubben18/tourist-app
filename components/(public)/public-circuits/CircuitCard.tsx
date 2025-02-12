@@ -11,13 +11,15 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { CircuitsDTO } from "@/dto/circuits-dto";
-
+import { useRouter } from "next/navigation";
+import { ROUTES } from "@/routes";
 interface CircuitCardProps {
   circuit: CircuitsDTO;
 }
 
 export function CircuitCard({
   circuit: {
+    id,
     name,
     description,
     image,
@@ -30,6 +32,7 @@ export function CircuitCard({
     rating,
   },
 }: CircuitCardProps) {
+  const router = useRouter();
   return (
     <Card className="hover:shadow-md transition-shadow duration-200">
       <CardHeader className="p-0">
@@ -84,7 +87,11 @@ export function CircuitCard({
         </div>
       </CardContent>
       <CardFooter>
-        <Button>View Details</Button>
+        <Button
+          onClick={() => router.push(`${ROUTES.public.publicCircuits}/${id}`)}
+        >
+          View Details
+        </Button>
       </CardFooter>
     </Card>
   );

@@ -57,6 +57,13 @@
       "when": 1739007916059,
       "tag": "0007_smiling_stellaris",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1739396671792,
+      "tag": "0008_bright_warbound",
+      "breakpoints": true
     }
   ]
 }

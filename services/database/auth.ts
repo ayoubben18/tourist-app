@@ -2,15 +2,16 @@
 
 import {
   GuideOnboardingSchema,
+  signInSchema,
   touristOnboardingSchema,
 } from "@/utils/schemas";
-import { publicAction } from "../server-only";
+import { publicAction, authenticatedAction } from "../server-only";
 import { createClient } from "@/utils/supabase/server-client";
 import { db } from "@/db";
 import {
   guide_profiles,
   objectsInStorage,
-  users_additional_info
+  users_additional_info,
 } from "@/db/migrations/schema";
 import { and, eq } from "drizzle-orm";
 
@@ -86,8 +87,9 @@ const guideOnboarding = publicAction.create(
       hourlyRate,
       password,
       profile_picture,
-      authorization_document, 
-    }, _
+      authorization_document,
+    },
+    _
   ) => {
     const pfp = profile_picture as File | null;
     const authorization_doc = authorization_document as File;
@@ -111,8 +113,6 @@ const guideOnboarding = publicAction.create(
     });
     // console.log("user: ",data);
 
-
-
     if (error) {
       throw new Error(error.message);
     }
@@ -120,7 +120,6 @@ const guideOnboarding = publicAction.create(
     if (!data.user) {
       throw new Error("User not created");
     }
-
 
     const guide_id = data.user.id;
     var avatar_url: string | null = null;
@@ -154,8 +153,13 @@ const guideOnboarding = publicAction.create(
     const doc_object = await db
       .select()
       .from(objectsInStorage)
-      .where(and(eq(objectsInStorage.path_tokens, [doc_data.path]), eq(objectsInStorage.bucket_id, "documents")))
-      .then(res => res[0]);
+      .where(
+        and(
+          eq(objectsInStorage.path_tokens, [doc_data.path]),
+          eq(objectsInStorage.bucket_id, "documents")
+        )
+      )
+      .then((res) => res[0]);
 
     await db.transaction(async (tx) => {
       await tx.insert(users_additional_info).values({
@@ -176,4 +180,59 @@ const guideOnboarding = publicAction.create(
   }
 );
 
-export { touristOnboarding, guideOnboarding };
+const signIn = publicAction.create(
+  signInSchema,
+  async ({ email, password }, _) => {
+    const supabase = await createClient();
+
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (data.user) {
+      const userInfo = await getUserInfo();
+      console.log("User role: ", userInfo);
+    }
+
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+);
+
+const signOut = publicAction.create(async ({}) => {
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+});
+
+const getUserInfo = authenticatedAction.create(async ({ userId, email }) => {
+  const [userInfo] = await db
+    .select({
+      id: users_additional_info.id,
+      full_name: users_additional_info.full_name,
+      avatar_url: users_additional_info.avatar_url,
+      role: users_additional_info.role,
+    })
+    .from(users_additional_info)
+    .where(eq(users_additional_info.id, userId))
+    .limit(1);
+
+  return { ...userInfo, email: email };
+});
+
+const isUserAuthenticated = publicAction.create(async () => {
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.getUser();
+
+  return data.user ? true : false;
+});
+
+export {
+  touristOnboarding,
+  guideOnboarding,
+  signIn,
+  signOut,
+  getUserInfo,
+  isUserAuthenticated,
+};
