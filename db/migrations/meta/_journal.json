@@ -64,6 +64,20 @@
       "when": 1739396671792,
       "tag": "0008_bright_warbound",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1739479767064,
+      "tag": "0009_nostalgic_prism",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1739480854066,
+      "tag": "0010_lumpy_stranger",
+      "breakpoints": true
     }
   ]
 }

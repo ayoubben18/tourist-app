@@ -7,7 +7,6 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import Image from "next/image";
-import { Navbar } from "@/components/(public)/home-page/NavBar";
 import im1 from "../assets/Fes.webp";
 import im2 from "../assets/Google_map.png";
 import im3 from "../assets/Guided_Tours.jpg";

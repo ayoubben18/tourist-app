@@ -33,6 +33,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isUserAuthenticated } from "@/services/database";
+import { Skeleton } from "@/components/ui/skeleton";
 
 const navLinks: { title: string; href: string }[] = [
   { title: "Home", href: ROUTES.public.home },
@@ -74,52 +75,52 @@ export function Navbar() {
   );
 
   return (
-    <header className="w-full bg-white shadow-md">
-      <nav className="container mx-auto flex items-center justify-between py-4 px-6">
-        {/* Logo */}
-        <Link href="/" className="flex items-center space-x-2">
-          <span className="text-xl font-bold text-gray-900">Tourist App</span>
-        </Link>
+    <div className=" flex items-center justify-between p-6">
+      {/* Logo */}
+      <Link href="/" className="flex items-center space-x-2">
+        <span className="text-xl font-bold text-gray-900">Tourist App</span>
+      </Link>
 
-        {/* Navigation Menu */}
-        <NavigationMenu>
-          <NavigationMenuList className="hidden md:flex space-x-6">
-            {/* Static Links */}
-            {navLinks.map((link) => (
-              <NavigationMenuItem key={link.title}>
-                <Link href={link.href} legacyBehavior passHref>
-                  <NavigationMenuLink className={navigationMenuTriggerStyle()}>
-                    {link.title}
-                  </NavigationMenuLink>
-                </Link>
-              </NavigationMenuItem>
-            ))}
-          </NavigationMenuList>
-        </NavigationMenu>
+      {/* Navigation Menu */}
+      <NavigationMenu>
+        <NavigationMenuList className="hidden md:flex space-x-6">
+          {/* Static Links */}
+          {navLinks.map((link) => (
+            <NavigationMenuItem key={link.title}>
+              <Link href={link.href} legacyBehavior passHref>
+                <NavigationMenuLink className={navigationMenuTriggerStyle()}>
+                  {link.title}
+                </NavigationMenuLink>
+              </Link>
+            </NavigationMenuItem>
+          ))}
+        </NavigationMenuList>
+      </NavigationMenu>
 
-        {/* Call to Action Button */}
-        {isAuthenticated ? (
-          <UserNav />
-        ) : (
-          <div className="flex gap-4">
-            <Button
-              variant={"outline"}
-              onClick={() => router.push(ROUTES.auth.signIn)}
-            >
-              Sign In
-            </Button>
-            <Button onClick={() => router.push(ROUTES.auth.touristRegister)}>
-              Sign Up
-            </Button>
-          </div>
-        )}
-
-        {/* Mobile Menu */}
-        <div className="md:hidden">
-          <MobileMenu navLinks={navLinks} featureLinks={featureLinks} />
+      {/* Call to Action Button */}
+      {isAuthenticatedLoading ? (
+        <Skeleton className=" h-10 w-20 rounded-full" />
+      ) : isAuthenticated ? (
+        <UserNav />
+      ) : (
+        <div className="flex gap-4">
+          <Button
+            variant={"outline"}
+            onClick={() => router.push(ROUTES.auth.signIn)}
+          >
+            Sign In
+          </Button>
+          <Button onClick={() => router.push(ROUTES.auth.touristRegister)}>
+            Sign Up
+          </Button>
         </div>
-      </nav>
-    </header>
+      )}
+
+      {/* Mobile Menu */}
+      {/* <div className="md:hidden">
+        <MobileMenu navLinks={navLinks} featureLinks={featureLinks} />
+      </div> */}
+    </div>
   );
 }
 
@@ -205,9 +206,9 @@ export function UserNav() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild>
-        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-          <Avatar className="size-10">
+      <DropdownMenuTrigger asChild className="h-10 w-10">
+        <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
+          <Avatar className="h-10 w-10">
             <AvatarImage
               src={userInfo?.avatar_url || ""}
               alt={userInfo?.full_name || ""}
@@ -222,7 +223,7 @@ export function UserNav() {
           </Avatar>
         </Button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent align="end" forceMount>
+      <DropdownMenuContent align="end">
         <DropdownMenuLabel className="font-normal">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">

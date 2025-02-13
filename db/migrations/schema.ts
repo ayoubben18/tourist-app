@@ -782,7 +782,7 @@ export const guide_status = pgEnum("guide_status", [
 ]);
 
 export const guide_profiles = pgTable("guide_profiles", {
-  guide_id: uuid("guide_id")
+  id: uuid("id")
     .references(() => users_additional_info.id)
     .primaryKey(),
   verification_status: guide_status("verification_status"),
@@ -792,7 +792,6 @@ export const guide_profiles = pgTable("guide_profiles", {
   years_of_experience: integer("years_of_experience"),
   rating: decimal("rating", { precision: 3, scale: 2 }),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
-  available_hours: json("available_hours"),
   verified_at: timestamp("verified_at", { mode: "string" }),
 });
 
@@ -807,7 +806,7 @@ export const bookings = pgTable("bookings", {
   booking_id: serial("booking_id").primaryKey(),
   circuit_id: integer("circuit_id").references(() => circuits.id),
   tourist_id: uuid("tourist_id").references(() => usersInAuth.id),
-  guide_id: uuid("guide_id").references(() => guide_profiles.guide_id),
+  guide_id: uuid("guide_id").references(() => guide_profiles.id),
   booking_date: date("booking_date").notNull(),
   start_time: time("start_time").notNull(),
 
@@ -835,3 +834,7 @@ export type Circuit = typeof circuits.$inferSelect;
 export type UsersAdditionalInfo = typeof users_additional_info.$inferSelect;
 export type City = typeof cities.$inferSelect;
 export type PointOfInterest = typeof points_of_interest.$inferSelect;
+export type GuideProfile = typeof guide_profiles.$inferSelect;
+export type Booking = typeof bookings.$inferSelect;
+export type Comment = typeof comments.$inferSelect;
+export type Like = typeof likes.$inferSelect;

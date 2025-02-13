@@ -1,6 +1,8 @@
 "use client";
 
+import { AutoComplete, Option } from "@/components/shared/autocomplete";
 import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
 import {
   Card,
   CardContent,
@@ -8,20 +10,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  ChevronLeft,
-  ChevronRight,
-  CirclePlus,
-  Grip,
-  Trash2,
-} from "lucide-react";
-import { parseAsInteger, useQueryState } from "nuqs";
-import React, { Fragment, useEffect } from "react";
-import { addDays } from "date-fns";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useForm, useFieldArray } from "react-hook-form";
-import { createCircuitSchema } from "@/utils/schemas";
-import { z } from "zod";
 import {
   Form,
   FormControl,
@@ -32,29 +20,23 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { AutoComplete } from "@/components/shared/autocomplete";
 import { Label } from "@/components/ui/label";
-import {
-  Sortable,
-  SortableDragHandle,
-  SortableItem,
-} from "@/components/ui/sortable";
-import { Calendar } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { format } from "date-fns";
-import { CalendarIcon } from "lucide-react";
+import { useGuides } from "@/hooks/use-guides";
 import { cn } from "@/lib/utils";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { createCircuitSchema } from "@/utils/schemas";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { addDays, format } from "date-fns";
+import { CalendarIcon, ChevronLeft, ChevronRight } from "lucide-react";
+import { parseAsInteger, useQueryState } from "nuqs";
+import React, { useEffect, useState } from "react";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { SelectableCard } from "./selectable-card";
 
 type StepType = {
   id: number;
@@ -63,20 +45,61 @@ type StepType = {
   component: React.ReactNode;
 };
 
+type Place = {
+  id: number;
+  name: string;
+  description?: string;
+  image: string;
+};
+
+const cities: Option[] = [
+  { value: "1", label: "New York", description: "Famous city" },
+  { value: "2", label: "Los Angeles", description: "Entertainment hub" },
+  { value: "3", label: "Chicago", description: "Iconic skyscraper" },
+  { value: "4", label: "Brooklyn Bridge", description: "Historic bridge" },
+  { value: "5", label: "Statue of Liberty", description: "National monument" },
+];
+
 const CreateCircuitStepper = () => {
-  const cities = [
-    { value: "new-york", label: "New York" },
-    { value: "london", label: "London" },
-    { value: "paris", label: "Paris" },
-    { value: "tokyo", label: "Tokyo" },
-    { value: "dubai", label: "Dubai" },
-    { value: "singapore", label: "Singapore" },
-    { value: "hong-kong", label: "Hong Kong" },
-    { value: "sydney", label: "Sydney" },
-    { value: "rome", label: "Rome" },
-    { value: "barcelona", label: "Barcelona" },
+  const places: Place[] = [
+    {
+      id: 1,
+      name: "Central Park",
+      description: "Famous urban park",
+      image:
+        "https://images.unsplash.com/photo-1534270804882-6b5048b1c1fc?w=500&q=80",
+    },
+    {
+      id: 2,
+      name: "Times Square",
+      description: "Entertainment hub",
+      image:
+        "https://images.unsplash.com/photo-1581484870083-0068e4767a64?w=500&q=80",
+    },
+    {
+      id: 3,
+      name: "Empire State",
+      description: "Iconic skyscraper",
+      image:
+        "https://images.unsplash.com/photo-1555109307-f7d9da25c244?w=500&q=80",
+    },
+    {
+      id: 4,
+      name: "Brooklyn Bridge",
+      description: "Historic bridge",
+      image:
+        "https://images.unsplash.com/photo-1582447272538-f1b1a4b23c01?w=500&q=80",
+    },
+    {
+      id: 5,
+      name: "Statue of Liberty",
+      description: "National monument",
+      image:
+        "https://images.unsplash.com/photo-1575384043001-f37f48835528?w=500&q=80",
+    },
   ];
 
+  const [selectedPlaces, setSelectedPlaces] = useState<Set<number>>(new Set());
   const [step, setStep] = useQueryState("step", parseAsInteger.withDefault(1));
   const form = useForm<z.infer<typeof createCircuitSchema>>({
     resolver: zodResolver(createCircuitSchema),
@@ -85,15 +108,15 @@ const CreateCircuitStepper = () => {
       guideId: undefined,
       isPublic: true,
       places: [],
-      startingPlace: "",
+      startingPlace: 0,
       startTime: addDays(new Date(), 1),
     },
   });
 
-  const { fields, append, remove, move } = useFieldArray({
-    control: form.control,
-    name: "places",
-  });
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredPlaces = places.filter((place) =>
+    place.name.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   useEffect(() => {
     setStep(1);
@@ -108,6 +131,25 @@ const CreateCircuitStepper = () => {
     if (step === 1) return;
     setStep((step) => step - 1);
   };
+
+  const handlePlaceSelection = (placeId: number) => {
+    const newSelectedPlaces = new Set(selectedPlaces);
+    if (selectedPlaces.has(placeId)) {
+      newSelectedPlaces.delete(placeId);
+    } else {
+      newSelectedPlaces.add(placeId);
+    }
+    setSelectedPlaces(newSelectedPlaces);
+  };
+
+  const {
+    data: guides,
+    isLoading,
+    setSearchTerm,
+    searchTerm,
+  } = useGuides({
+    enabled: step === 3,
+  });
 
   const steps: StepType[] = [
     {
@@ -126,7 +168,10 @@ const CreateCircuitStepper = () => {
                   <AutoComplete
                     emptyMessage="Select a city"
                     options={cities}
-                    onValueChange={(value) => field.onChange(value.label)}
+                    onValueChange={(value) => {
+                      field.onChange(value.value);
+                      setSearchQuery("");
+                    }}
                   />
                 </FormControl>
                 <FormDescription>
@@ -137,65 +182,41 @@ const CreateCircuitStepper = () => {
             )}
           />
 
-          <div className="space-y-2 flex flex-col">
+          <div className="space-y-2">
             <Label>Places</Label>
-            <Sortable
-              value={fields}
-              onMove={({ activeIndex, overIndex }) =>
-                move(activeIndex, overIndex)
-              }
-            >
-              {fields.map((field, index) => (
-                <Fragment key={field.id}>
-                  <SortableItem value={field.id} asChild className="w-full">
-                    <div className="flex gap-2 items-center w-full">
-                      <SortableDragHandle
-                        type="button"
-                        className="cursor-grab rounded-md border-2 border-slate-200 bg-slate-50 p-2 hover:bg-slate-300 flex-shrink-0"
-                      >
-                        <Grip className="h-5 w-5 text-gray-500" />
-                      </SortableDragHandle>
-                      <FormField
-                        key={field.id}
-                        control={form.control}
-                        name={`places.${index}`}
-                        render={({ field }) => (
-                          <FormItem className="w-full">
-                            <FormControl>
-                              <Input
-                                {...field}
-                                placeholder={`Place ${index + 1}`}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                      <Button
-                        type="button"
-                        size={"icon"}
-                        variant="destructive"
-                        onClick={() => remove(index)}
-                        className="flex-shrink-0"
-                      >
-                        <Trash2 className="size-4" />
-                      </Button>
-                    </div>
-                  </SortableItem>
-                </Fragment>
-              ))}
-            </Sortable>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={() => append("")}
-              className="mt-2 gap-2"
-            >
-              <CirclePlus className=" size-4" />
-              Add Place
-            </Button>
+            {!form.watch("city") ? (
+              <Card className="p-6">
+                <div className="flex flex-col items-center justify-center text-center space-y-2">
+                  <div className="text-muted-foreground">
+                    Please select a city first to view available places
+                  </div>
+                </div>
+              </Card>
+            ) : (
+              <>
+                <Input
+                  type="text"
+                  placeholder="Search places..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="mb-4"
+                />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {filteredPlaces.map((place) => (
+                    <SelectableCard
+                      key={place.id}
+                      selected={selectedPlaces.has(place.id)}
+                      onClick={() => handlePlaceSelection(place.id)}
+                      title={place.name}
+                      description={place.description}
+                      image={place.image}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
             <FormDescription>
-              Add the places you want to visit in your circuit
+              Select the places you want to visit in your circuit
             </FormDescription>
           </div>
         </div>
@@ -295,14 +316,121 @@ const CreateCircuitStepper = () => {
     {
       id: 3,
       title: "Select Guide",
-      description: "Configure work/rest intervals and rounds",
-      component: <div>Circuit Config</div>,
+      description: "Select the guide for your circuit",
+      component: (
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="guideId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Guide</FormLabel>
+                <FormControl>
+                  <Input
+                    type="text"
+                    placeholder="Search guides by name..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="mb-4"
+                  />
+                </FormControl>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {isLoading ? (
+                    <Card className="p-6">
+                      <div className="flex items-center justify-center">
+                        <div className="text-muted-foreground">
+                          Loading guides...
+                        </div>
+                      </div>
+                    </Card>
+                  ) : guides?.length === 0 ? (
+                    <Card className="p-6">
+                      <div className="flex items-center justify-center">
+                        <div className="text-muted-foreground">
+                          No guides found
+                        </div>
+                      </div>
+                    </Card>
+                  ) : (
+                    guides?.map((guide) => (
+                      <SelectableCard
+                        key={guide.id}
+                        selected={field.value === guide.id}
+                        onClick={() => field.onChange(guide.id)}
+                        title={guide.full_name ?? ""}
+                        header={
+                          <>
+                            <img
+                              src={guide.avatar_url ?? ""}
+                              alt={guide.full_name ?? ""}
+                              className="rounded-full h-12 w-12 object-cover"
+                            />
+                            <div>
+                              <CardTitle className="text-base">
+                                {guide.full_name}
+                              </CardTitle>
+                              <CardDescription>
+                                {guide.years_of_experience} years of experience
+                              </CardDescription>
+                            </div>
+                          </>
+                        }
+                      >
+                        <div className="text-sm text-muted-foreground">
+                          <p>Experience: {guide.years_of_experience} years</p>
+                        </div>
+                      </SelectableCard>
+                    ))
+                  )}
+                </div>
+                <FormDescription>
+                  Select a guide for your circuit
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+      ),
     },
     {
       id: 4,
       title: "Attention",
       description: "Review and confirm your circuit setup",
-      component: <div>Review Circuit</div>,
+      component: (
+        <div className="space-y-4">
+          <FormField
+            control={form.control}
+            name="isPublic"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Circuit Visibility</FormLabel>
+                <FormControl>
+                  <div className="grid grid-cols-2 gap-4">
+                    <SelectableCard
+                      selected={field.value === true}
+                      onClick={() => field.onChange(true)}
+                      title="Public"
+                      description="Anyone can view and join this circuit"
+                    />
+                    <SelectableCard
+                      selected={field.value === false}
+                      onClick={() => field.onChange(false)}
+                      title="Private"
+                      description="Only people you invite can view and join"
+                    />
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  Choose who can see and join your circuit
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          {/* Add other review content here */}
+        </div>
+      ),
     },
   ];
 
@@ -325,6 +453,7 @@ const CreateCircuitStepper = () => {
           </Card>
           <div className=" flex items-center justify-between">
             <Button
+              type="button"
               onClick={handleBack}
               disabled={step === 1}
               className=" gap-2"
@@ -333,6 +462,7 @@ const CreateCircuitStepper = () => {
               Back
             </Button>
             <Button
+              type="button"
               onClick={handleNext}
               disabled={step === steps.length}
               className="gap-2"
