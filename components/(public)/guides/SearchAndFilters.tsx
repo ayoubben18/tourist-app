@@ -12,37 +12,31 @@ import {
 import { useQueryStates, parseAsInteger, parseAsString, parseAsFloat } from "nuqs";
 
 const filterOptions = {
-  duration: [
-    { value: "1", label: "1 hour" },
-    { value: "2", label: "2 hours" },
-    { value: "3", label: "3 hours" },
-    { value: "4", label: "4 hours" },
+  yearsOfExperience: [
+    { value: "1", label: "1 year" },
+    { value: "2", label: "2 years" },
+    { value: "3", label: "3 years" },
+    { value: "4", label: "4+" },
   ],
-  distance: [
-    { value: "5", label: "0-5 km" },
-    { value: "10", label: "5-10 km" },
-    { value: "20", label: "10-20 km" },
-    { value: "30", label: "20+ km" },
+  pricePerHour: [
+    { value: "75", label: "50-100 DHS" },
+    { value: "125", label: "100-150 DHS" },
+    { value: "175", label: "150-200DHS" },
+    { value: "200", label: "200+ DHS" },
   ],
   rating: [
     { value: "4", label: "4+ stars" },
     { value: "3", label: "3+ stars" },
     { value: "2", label: "2+ stars" },
-  ],
-  sortBy: [
-    { value: "popular", label: "Most Popular" },
-    { value: "recent", label: "Most Recent" },
-    { value: "rating", label: "Highest Rated" },
-  ],
+  ]
 };
 
 export function SearchAndFilters() {
   const [searchProperties, setSearchProperties] = useQueryStates({
     searchTerm: parseAsString.withDefault(""),
-    duration: parseAsInteger.withDefault(0),
-    distance: parseAsFloat.withDefault(0),
+    yearsOfExperience: parseAsInteger.withDefault(0),
+    pricePerHour: parseAsFloat.withDefault(0),
     rating: parseAsFloat.withDefault(0),
-    sortBy: parseAsString.withDefault(""),
   });
 
   const [open, setOpen] = React.useState(false);
@@ -82,30 +76,25 @@ export function SearchAndFilters() {
 
   const applyFilters = () => {
     const newProperties: {
-      duration: number;
-      distance: number;
+      yearsOfExperience: number;
+      pricePerHour: number;
       rating: number;
-      sortBy: string;
     } = {
-      duration: 0,
-      distance: 0,
+      yearsOfExperience: 0,
+      pricePerHour: 0,
       rating: 0,
-      sortBy: "",
     };
 
     selectedFilters.forEach((filter) => {
       switch (filter.type) {
-        case "duration":
-          newProperties.duration = parseInt(filter.value);
+        case "yearsOfExperience":
+          newProperties.yearsOfExperience = parseInt(filter.value);
           break;
-        case "distance":
-          newProperties.distance = parseFloat(filter.value);
+        case "pricePerHour":
+          newProperties.pricePerHour = parseFloat(filter.value);
           break;
         case "rating":
           newProperties.rating = parseFloat(filter.value);
-          break;
-        case "sortBy":
-          newProperties.sortBy = filter.value;
           break;
       }
     });
@@ -117,10 +106,9 @@ export function SearchAndFilters() {
   const clearFilters = () => {
     setSelectedFilters([]);
     setSearchProperties({
-      duration: 0,
-      distance: 0,
+      yearsOfExperience: 0,
+      pricePerHour: 0,
       rating: 0,
-      sortBy: "",
     });
     setOpen(false);
   };

@@ -19,9 +19,11 @@ import { signInSchema } from "@/utils/schemas";
 import { z } from "zod";
 import { signIn } from "@/services/database";
 import FormError from "@/components/shared/form-error";
+import { parseAsString, useQueryState } from "nuqs";
 
 export default function LoginForm() {
   const router = useRouter();
+  const [returnPath, setReturnPath] = useQueryState("returnTo", parseAsString.withDefault("/"));
   const queryClient = useQueryClient();
   const form = useForm<z.infer<typeof signInSchema>>({
     resolver: zodResolver(signInSchema),
@@ -41,12 +43,11 @@ export default function LoginForm() {
   const onSubmit = async (values: z.infer<typeof signInSchema>) => {
     try {
       await mutateAsync(values);
-
       toast.success("Logged in successfully");
-
-      router.push("/");
+      router.push(returnPath.replaceAll("%","/"))
     } catch (error) {
       toast.error("Failed to log in");
+      router.push("/")
     }
   };
 

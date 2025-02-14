@@ -170,7 +170,7 @@ const guideOnboarding = publicAction.create(
       });
 
       await tx.insert(guide_profiles).values({
-        guide_id: guide_id,
+        id: guide_id,
         verification_status: "pending",
         authorization_document: doc_object.id,
         years_of_experience: yearsOfExperience,
@@ -225,7 +225,7 @@ const isUserAuthenticated = publicAction.create(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 
-  return data.user ? true : false;
+  return data.user ? { isAuthenticated: true, user_id: data.user.id} : {isAuthenticated: false, user_id: null}
 });
 
 export {

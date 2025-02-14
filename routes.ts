@@ -4,6 +4,7 @@ export const ROUTES = {
     about: "/about",
     contact: "/contact",
     publicCircuits: "/public-circuits",
+    guides: "/guides",
   },
   auth: {
     signIn: "/sign-in",

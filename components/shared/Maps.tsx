@@ -25,10 +25,10 @@ const customIcon = new L.Icon({
 
 export interface Place {
   name: string;
-  description: string;
+  description: string | null;
   estimated_duration: number;
   opening_hours: any;
-  category: string;
+  category: string | null;
   coordinates: [number, number];
 }
 

@@ -1,0 +1,2 @@
+ALTER TABLE "guides_comments" ADD COLUMN "user_id" uuid;--> statement-breakpoint
+ALTER TABLE "guides_comments" ADD CONSTRAINT "guides_comments_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "auth"."users"("id") ON DELETE no action ON UPDATE no action;

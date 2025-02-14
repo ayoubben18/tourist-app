@@ -815,11 +815,12 @@ export const bookings = pgTable("bookings", {
   total_price: decimal("total_price", { precision: 10, scale: 2 }),
 });
 
-export const comments = pgTable("comments", {
+export const circuit_comments = pgTable("circuit_comments", {
   id: serial("id").primaryKey(),
   circuit_id: integer("circuit_id").references(() => circuits.id),
   user_id: uuid("user_id").references(() => usersInAuth.id),
   comment: text("comment").notNull(),
+  rating: integer("rating"),
   created_at: timestamp("created_at").defaultNow(),
 });
 
@@ -830,11 +831,31 @@ export const likes = pgTable("likes", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+export const favorites = pgTable("favorites", {
+  id: serial("id").primaryKey(),
+  circuit_id: integer("circuit_id").references(() =>circuits.id),
+  user_id: uuid("user_id").references(() => usersInAuth.id),
+  created_at: timestamp("created_at").defaultNow(),
+})
+
+export const guides_comments = pgTable("guides_comments", {
+  id: serial("id").primaryKey(),
+  guide_id: uuid("guide_id").references(() => guide_profiles.id),
+  user_id: uuid("user_id").references(() => usersInAuth.id),
+  comment: text("comment"),
+  rating: integer("rating"),
+  created_at: timestamp("created_at").defaultNow(),
+})
+
+
 export type Circuit = typeof circuits.$inferSelect;
 export type UsersAdditionalInfo = typeof users_additional_info.$inferSelect;
 export type City = typeof cities.$inferSelect;
 export type PointOfInterest = typeof points_of_interest.$inferSelect;
 export type GuideProfile = typeof guide_profiles.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
-export type Comment = typeof comments.$inferSelect;
+export type CircuitComments = typeof circuit_comments.$inferSelect;
 export type Like = typeof likes.$inferSelect;
+export type Favorite = typeof favorites.$inferSelect;
+export type GuidesComments = typeof guides_comments.$inferSelect;
+

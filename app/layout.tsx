@@ -6,6 +6,7 @@ import QueryProvider from "@/providers/query-provider";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Navbar } from "@/components/(public)/home-page/NavBar";
 import Footer from "@/components/shared/footer";
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -37,6 +38,7 @@ export default function RootLayout({
             <Navbar />
             {children}
             <Footer />
+            <ReactQueryDevtools initialIsOpen={false} />
             <Toaster />
           </body>
         </html>
