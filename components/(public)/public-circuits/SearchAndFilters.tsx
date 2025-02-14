@@ -186,31 +186,6 @@ export function SearchAndFilters() {
                 ))}
               </div>
 
-              {/* Selected filters */}
-              {selectedFilters.length > 0 && (
-                <div>
-                  <h3 className="mb-2 text-sm font-medium">Selected Filters</h3>
-                  <div className="flex flex-wrap gap-2">
-                    {selectedFilters.map((filter) => (
-                      <Badge
-                        key={`${filter.type}-${filter.value}`}
-                        variant="secondary"
-                        className="flex items-center gap-1"
-                      >
-                        {filter.label}
-                        <X
-                          className="h-3 w-3 cursor-pointer"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeFilter(filter.type, filter.value);
-                          }}
-                        />
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {/* Buttons */}
               <div className="flex items-center gap-2 pt-2 border-t">
                 <Button
