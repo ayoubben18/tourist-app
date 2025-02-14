@@ -25,6 +25,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIsAuthenticated } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import Comments from "@/components/(public)/public-circuits/Comments";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Dynamically import the Map component with SSR disabled
 const Map = dynamic(() => import("@/components/shared/Maps"), {
@@ -224,7 +225,47 @@ export default function App() {
   };
 
   if (isCircuitLoading || isAuthenticatedLoading) {
-    return <div className="w-full p-6 text-center">Loading...</div>;
+    return (
+      <div className="max-w-4xl mx-auto p-6 space-y-8">
+        {/* Header Section */}
+        <div className="flex items-center gap-4 mb-6">
+          <Skeleton className="h-12 w-12 rounded-full" /> {/* Avatar */}
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-[100px]" /> {/* Created by text */}
+            <Skeleton className="h-6 w-[200px]" /> {/* Name */}
+          </div>
+        </div>
+  
+        {/* Title Section */}
+        <div className="space-y-4">
+          <Skeleton className="h-10 w-[300px]" /> {/* Title */}
+          <Skeleton className="h-6 w-[200px]" /> {/* Location */}
+          <Skeleton className="h-4 w-full max-w-[600px]" /> {/* Description */}
+        </div>
+  
+        {/* Map Placeholder */}
+        <Skeleton className="h-[350px] w-full rounded-lg" />
+  
+        {/* Places to Visit Section */}
+        <div className="space-y-6">
+          <Skeleton className="h-8 w-[200px]" /> {/* Section title */}
+          
+          {/* Place Cards */}
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="flex items-start space-x-4 border rounded-lg p-4">
+              <div className="flex-1 space-y-3">
+                <Skeleton className="h-6 w-[200px]" /> {/* Place name */}
+                <Skeleton className="h-4 w-full max-w-[400px]" /> {/* Description */}
+              </div>
+              <div className="flex flex-col items-end space-y-2">
+                <Skeleton className="h-4 w-[60px]" /> {/* Duration */}
+                <Skeleton className="h-4 w-[80px]" /> {/* Category */}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   if (isCircuitError || !circuitWithPOI) {
