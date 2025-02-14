@@ -830,6 +830,14 @@ export const likes = pgTable("likes", {
   created_at: timestamp("created_at").defaultNow(),
 });
 
+export const favorites = pgTable("favorites", {
+  id: serial("id").primaryKey(),
+  circuit_id: integer("circuit_id").references(() =>circuits.id),
+  user_id: uuid("user_id").references(() => usersInAuth.id),
+  created_at: timestamp("created_at").defaultNow(),
+})
+
+
 export type Circuit = typeof circuits.$inferSelect;
 export type UsersAdditionalInfo = typeof users_additional_info.$inferSelect;
 export type City = typeof cities.$inferSelect;
@@ -838,3 +846,4 @@ export type GuideProfile = typeof guide_profiles.$inferSelect;
 export type Booking = typeof bookings.$inferSelect;
 export type Comment = typeof comments.$inferSelect;
 export type Like = typeof likes.$inferSelect;
+export type Favorite = typeof favorites.$inferSelect;

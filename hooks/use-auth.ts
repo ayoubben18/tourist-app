@@ -1,4 +1,5 @@
-import { getUserInfo, signOut as signOutService } from "@/services/database";
+import { getUserInfo, isUserAuthenticated, signOut as signOutService } from "@/services/database";
+import useQueryCacheKeys from "@/utils/use-query-cache-keys";
 import { useMutation, useQuery } from "@tanstack/react-query";
 
 export const useAuth = () => {
@@ -10,5 +11,18 @@ export const useAuth = () => {
     mutationFn: () => signOutService(),
   });
 
+ 
+
   return { userInfo, isUserInfoLoading, signOut, isSigningOut };
 };
+
+export const useIsAuthenticated = () => {
+  const { data: isAuthenticated, isLoading: isAuthenticatedLoading } = useQuery(
+    {
+      queryKey: useQueryCacheKeys.isUserAuthenticated(),
+      queryFn: () => isUserAuthenticated(),
+    }
+  );
+
+  return {isAuthenticated, isAuthenticatedLoading}
+}

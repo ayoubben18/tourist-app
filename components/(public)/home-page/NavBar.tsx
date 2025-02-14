@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/navigation-menu";
 import { ROUTES } from "@/routes";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/hooks/use-auth";
+import { useAuth, useIsAuthenticated } from "@/hooks/use-auth";
 import { LogOut } from "lucide-react";
 import { Moon } from "lucide-react";
 
@@ -31,9 +31,10 @@ import { Button } from "@/components/ui/button";
 import { Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "sonner";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { isUserAuthenticated } from "@/services/database";
+import {  useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
+import useQueryCacheKeys from "@/utils/use-query-cache-keys";
+import { isUserAuthenticated } from '@/services/database';
 
 const navLinks: { title: string; href: string }[] = [
   { title: "Home", href: ROUTES.public.home },
@@ -67,12 +68,7 @@ const featureLinks: { title: string; href: string; description: string }[] = [
 
 export function Navbar() {
   const router = useRouter();
-  const { data: isAuthenticated, isLoading: isAuthenticatedLoading } = useQuery(
-    {
-      queryKey: ["isAuthenticated"],
-      queryFn: () => isUserAuthenticated(),
-    }
-  );
+  const { isAuthenticated, isAuthenticatedLoading } = useIsAuthenticated()
 
   return (
     <div className=" flex items-center justify-between p-6">
@@ -100,7 +96,7 @@ export function Navbar() {
       {/* Call to Action Button */}
       {isAuthenticatedLoading ? (
         <Skeleton className=" h-10 w-20 rounded-full" />
-      ) : isAuthenticated ? (
+      ) : isAuthenticated?.isAuthenticated ? (
         <UserNav />
       ) : (
         <div className="flex gap-4">
@@ -200,7 +196,9 @@ export function UserNav() {
   const handleSignOut = async () => {
     await signOut();
     queryClient.invalidateQueries({ queryKey: ["isAuthenticated"] });
-    queryClient.invalidateQueries({ queryKey: ["userInfo"] });
+    queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isFavorite });
+    queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isLiked });
+    queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isUserAuthenticated });
     router.push(ROUTES.public.home);
   };
 
