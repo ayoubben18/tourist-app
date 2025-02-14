@@ -44,8 +44,8 @@ export const signInSchema = z.object({
 
 const createCircuitSchema = z.object({
   city: z.string(),
-  places: z.array(z.number()),
-  startingPlace: z.number(),
+  places: z.array(z.string()),
+  startingPlace: z.string(),
   startTime: z.date(),
   guideId: z.string().uuid().optional(),
   isPublic: z.boolean(),
