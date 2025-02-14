@@ -1,19 +1,28 @@
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { CommentsDTO } from "@/dto/comments-dto";
+import { CircuitCommentsDTO } from "@/dto/circuit-comments-dto";
+import { Star } from "lucide-react";
 import { useState } from "react";
 
 interface CommentsProps {
-  comments: CommentsDTO[] | undefined;
+  comments: CircuitCommentsDTO[] | undefined;
   commentsLoading: boolean;
   commentsError: boolean;
   currentUser: string | null | undefined;
   onDelete: (comment_id: number) => Promise<void>;
 }
 
-export default function Comments({ comments, commentsLoading, commentsError, currentUser, onDelete }: CommentsProps) {
-  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(null);
+export default function Comments({
+  comments,
+  commentsLoading,
+  commentsError,
+  currentUser,
+  onDelete,
+}: CommentsProps) {
+  const [deletingCommentId, setDeletingCommentId] = useState<number | null>(
+    null
+  );
 
   if (commentsLoading) {
     return (
@@ -36,7 +45,11 @@ export default function Comments({ comments, commentsLoading, commentsError, cur
   }
 
   if (commentsError) {
-    return <div className="text-center py-4 text-destructive">Error loading comments</div>;
+    return (
+      <div className="text-center py-4 text-destructive">
+        Error loading comments
+      </div>
+    );
   }
 
   return (
@@ -63,7 +76,21 @@ export default function Comments({ comments, commentsLoading, commentsError, cur
               </span>
             </div>
             <div className="mt-2 flex justify-between items-center pl-1">
-              <p className="text-muted-foreground">{comment.comment}</p>
+              <div className="flex flex-col gap-1 my-1">
+                <div className="flex items-center">
+                  {Array.from({ length: 5 }).map((_, index) => (
+                    <Star
+                      key={index}
+                      className={`w-4 h-4 ${
+                        index < (comment.rating || 0)
+                          ? "fill-yellow-400 text-yellow-400"
+                          : "fill-none text-yellow-400"
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className="mt-2 text-sm">{comment.comment}</p>
+              </div>
               {currentUser === comment.user_id && (
                 <Button
                   variant="destructive"

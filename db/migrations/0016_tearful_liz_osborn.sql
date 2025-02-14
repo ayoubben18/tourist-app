@@ -1,0 +1,1 @@
+ALTER TABLE "circuit_comments" RENAME COLUMN "rate" TO "rating";

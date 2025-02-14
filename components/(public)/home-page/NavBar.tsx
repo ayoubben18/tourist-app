@@ -2,14 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { cn } from "@/lib/utils";
 import {
   NavigationMenu,
-  NavigationMenuContent,
   NavigationMenuItem,
   NavigationMenuLink,
   NavigationMenuList,
-  NavigationMenuTrigger,
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import { ROUTES } from "@/routes";
@@ -21,7 +18,6 @@ import { Moon } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -30,41 +26,18 @@ import {
 import { Button } from "@/components/ui/button";
 import { Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { toast } from "sonner";
 import {  useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
-import { isUserAuthenticated } from '@/services/database';
 
 const navLinks: { title: string; href: string }[] = [
   { title: "Home", href: ROUTES.public.home },
   { title: "Circuits", href: ROUTES.public.publicCircuits },
+  { title: "Guides", href: ROUTES.public.guides },
   { title: "About", href: ROUTES.public.about },
   { title: "Contact", href: ROUTES.public.contact },
 ];
 
-const featureLinks: { title: string; href: string; description: string }[] = [
-  {
-    title: "Login",
-    href: "/login",
-    description: "Access your account to manage your data and preferences.",
-  },
-  {
-    title: "Register",
-    href: "/tourist-register",
-    description: "Sign up to create an account and explore our features.",
-  },
-  {
-    title: "FAQs",
-    href: "/faqs",
-    description: "Get answers to common questions and troubleshooting tips.",
-  },
-  {
-    title: "Account Settings",
-    href: "/settings",
-    description: "Manage your account preferences and privacy settings.",
-  },
-];
 
 export function Navbar() {
   const router = useRouter();

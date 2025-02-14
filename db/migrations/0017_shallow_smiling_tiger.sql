@@ -1,0 +1,1 @@
+ALTER TABLE "guides_comments" RENAME COLUMN "rate" TO "rating";

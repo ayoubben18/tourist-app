@@ -1,4 +1,4 @@
-import { Favorite, UsersAdditionalInfo } from "@/db/migrations/schema";
+import { Favorite } from "@/db/migrations/schema";
 
 type FavoritesDTO = Favorite
 

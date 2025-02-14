@@ -2,32 +2,33 @@
 
 import { z } from "zod";
 import { authenticatedAction, publicAction } from "../server-only";
-import { CommentsDTO } from "@/dto/comments-dto";
+import { CircuitCommentsDTO } from "@/dto/circuit-comments-dto";
 import { db } from "@/db";
-import { comments, users_additional_info } from "./../../db/migrations/schema";
+import { circuit_comments, users_additional_info } from "../../db/migrations/schema";
 import { and, eq } from "drizzle-orm";
 
 const getComments = publicAction.create(
   z.object({
     circuit_id: z.string(),
   }),
-  async ({ circuit_id }): Promise<CommentsDTO[]> => {
+  async ({ circuit_id }): Promise<CircuitCommentsDTO[]> => {
     const commentsOfCircuit = db
       .select({
-        id: comments.id,
-        circuit_id: comments.circuit_id,
-        comment: comments.comment,
-        user_id: comments.user_id,
-        created_at: comments.created_at,
+        id: circuit_comments.id,
+        circuit_id: circuit_comments.circuit_id,
+        comment: circuit_comments.comment,
+        rating: circuit_comments.rating,
+        user_id: circuit_comments.user_id,
+        created_at: circuit_comments.created_at,
         creator: users_additional_info.full_name,
         creator_avatar: users_additional_info.avatar_url,
       })
-      .from(comments)
+      .from(circuit_comments)
       .innerJoin(
         users_additional_info,
-        eq(users_additional_info.id, comments.user_id)
+        eq(users_additional_info.id, circuit_comments.user_id)
       )
-      .where(eq(comments.circuit_id, Number(circuit_id)));
+      .where(eq(circuit_comments.circuit_id, Number(circuit_id)));
 
     return commentsOfCircuit;
   }
@@ -37,12 +38,14 @@ const addComment = authenticatedAction.create(
   z.object({
     circuit_id: z.number().positive(),
     comment: z.string(),
+    rating: z.number().min(1).max(5),
   }),
-  async ({ circuit_id, comment }, context) => {
-    await db.insert(comments).values({
+  async ({ circuit_id, comment, rating }, context) => {
+    await db.insert(circuit_comments).values({
       circuit_id: Number(circuit_id),
       user_id: context.userId,
       comment,
+      rating
     });
   }
 );
@@ -53,9 +56,9 @@ const removeComment = authenticatedAction.create(
   }),
   async ({ comment_id }, context) => {
     await db
-      .delete(comments)
+      .delete(circuit_comments)
       .where(
-        and(eq(comments.id, comment_id), eq(comments.user_id, context.userId))
+        and(eq(circuit_comments.id, comment_id), eq(circuit_comments.user_id, context.userId))
       );
   }
 );

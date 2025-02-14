@@ -24,7 +24,16 @@ const useQueryCacheKeys = {
   commentsOfCircuit: (circuit_id: number) => [
     "commentsOfCircuit",
     circuit_id,
-  ]
+  ],
+  guides: () => ["guides"],
+  guide: (guide_id: string) => [
+    "guide",
+    guide_id,
+  ],
+  commentsOfGuide: (guide_id: string) => [
+    "commentsOfGuide",
+    guide_id,
+  ],
 };
 
 export default useQueryCacheKeys;

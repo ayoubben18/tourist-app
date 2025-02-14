@@ -1,4 +1,4 @@
-"use client"
+"use client";
 
 import React, { useState } from "react";
 import dynamic from "next/dynamic";
@@ -17,15 +17,28 @@ import { useParams, useRouter } from "next/navigation";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
 import { getCircuitWithPOI } from "@/services/database/circuits";
-import { addToLikes, isLiked, removeFromLikes } from "@/services/database/likes";
-import { addToFavorites, isFavorite, removeFromFavorites } from "@/services/database/favorites";
-import { addComment, getComments, removeComment } from "@/services/database/comments";
+import {
+  addToLikes,
+  isLiked,
+  removeFromLikes,
+} from "@/services/database/likes";
+import {
+  addToFavorites,
+  isFavorite,
+  removeFromFavorites,
+} from "@/services/database/favorites";
+import {
+  addComment,
+  getComments,
+  removeComment,
+} from "@/services/database/circuit-comments";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useIsAuthenticated } from "@/hooks/use-auth";
 import { toast } from "sonner";
-import Comments from "@/components/(public)/public-circuits/Comments";
 import { Skeleton } from "@/components/ui/skeleton";
+import Comments from "@/components/(public)/public-circuits/CircuitComments";
+import StarRating from "@/components/shared/StarRating";
 
 // Dynamically import the Map component with SSR disabled
 const Map = dynamic(() => import("@/components/shared/Maps"), {
@@ -41,13 +54,17 @@ export default function App() {
   const { id } = useParams();
   const circuit_id = Number(id);
   const [newComment, setNewComment] = useState("");
+  const [newRating, setNewRating] = useState(0);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isAuthenticated, isAuthenticatedLoading } = useIsAuthenticated();
-  
+
   // Get current path for redirection after login
-  const returnPath = typeof window !== 'undefined' ? encodeURIComponent(window.location.pathname) : '';
-  
+  const returnPath =
+    typeof window !== "undefined"
+      ? encodeURIComponent(window.location.pathname)
+      : "";
+
   const {
     data: circuitWithPOI,
     isLoading: isCircuitLoading,
@@ -57,7 +74,7 @@ export default function App() {
     queryFn: () => getCircuitWithPOI({ circuit_id: circuit_id.toString() }),
     enabled: !isNaN(circuit_id),
   });
-  
+
   const {
     data: comments,
     isLoading: commentsLoading,
@@ -68,22 +85,24 @@ export default function App() {
     enabled: !isNaN(circuit_id),
   });
 
-  const {
-    data: likeData,
-    isLoading: isLikedLoading,
-  } = useQuery({
-    queryKey: useQueryCacheKeys.isLiked(circuit_id, isAuthenticated?.user_id || "0"),
+  const { data: likeData, isLoading: isLikedLoading } = useQuery({
+    queryKey: useQueryCacheKeys.isLiked(
+      circuit_id,
+      isAuthenticated?.user_id || "0"
+    ),
     queryFn: () => isLiked({ circuit_id }),
-    enabled: isAuthenticated && isAuthenticated.isAuthenticated && !isNaN(circuit_id),
+    enabled:
+      isAuthenticated && isAuthenticated.isAuthenticated && !isNaN(circuit_id),
   });
 
-  const {
-    data: favoriteData,
-    isLoading: isFavoritedLoading,
-  } = useQuery({
-    queryKey: useQueryCacheKeys.isFavorite(circuit_id, isAuthenticated?.user_id || "0"),
+  const { data: favoriteData, isLoading: isFavoritedLoading } = useQuery({
+    queryKey: useQueryCacheKeys.isFavorite(
+      circuit_id,
+      isAuthenticated?.user_id || "0"
+    ),
     queryFn: () => isFavorite({ circuit_id }),
-    enabled: isAuthenticated &&  isAuthenticated.isAuthenticated && !isNaN(circuit_id),
+    enabled:
+      isAuthenticated && isAuthenticated.isAuthenticated && !isNaN(circuit_id),
   });
 
   // const likeData = { isLiked: false, like_id: null}
@@ -95,7 +114,10 @@ export default function App() {
     mutationFn: addToLikes,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: useQueryCacheKeys.isLiked(circuit_id, isAuthenticated?.user_id || "0"),
+        queryKey: useQueryCacheKeys.isLiked(
+          circuit_id,
+          isAuthenticated?.user_id || "0"
+        ),
       });
       toast.success("You've liked this circuit!");
     },
@@ -108,7 +130,10 @@ export default function App() {
     mutationFn: removeFromLikes,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: useQueryCacheKeys.isLiked(circuit_id, isAuthenticated?.user_id || "0"),
+        queryKey: useQueryCacheKeys.isLiked(
+          circuit_id,
+          isAuthenticated?.user_id || "0"
+        ),
       });
       toast.success("Circuit unliked!");
     },
@@ -121,7 +146,10 @@ export default function App() {
     mutationFn: addToFavorites,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: useQueryCacheKeys.isFavorite(circuit_id, isAuthenticated?.user_id || "0"),
+        queryKey: useQueryCacheKeys.isFavorite(
+          circuit_id,
+          isAuthenticated?.user_id || "0"
+        ),
       });
       toast.success("Circuit added to favorites!");
     },
@@ -134,7 +162,10 @@ export default function App() {
     mutationFn: removeFromFavorites,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: useQueryCacheKeys.isFavorite(circuit_id, isAuthenticated?.user_id || "0"),
+        queryKey: useQueryCacheKeys.isFavorite(
+          circuit_id,
+          isAuthenticated?.user_id || "0"
+        ),
       });
       toast.success("Circuit removed from favorites!");
     },
@@ -143,21 +174,24 @@ export default function App() {
     },
   });
 
-  const { mutateAsync: commentMutation, isPending: isCommenting } = useMutation({
-    mutationFn: addComment,
-    onSuccess: () => {
-      toast.success("Comment added successfully!");
-      setNewComment("");
-      queryClient.invalidateQueries({
-        queryKey: useQueryCacheKeys.commentsOfCircuit(circuit_id),
-      });
-    },
-    onError: () => {
-      toast.error("Failed to add comment");
-    },
-  });
+  const { mutateAsync: commentMutation, isPending: isCommenting } = useMutation(
+    {
+      mutationFn: addComment,
+      onSuccess: () => {
+        toast.success("Comment added successfully!");
+        setNewComment("");
+        setNewRating(0);
+        queryClient.invalidateQueries({
+          queryKey: useQueryCacheKeys.commentsOfCircuit(circuit_id),
+        });
+      },
+      onError: () => {
+        toast.error("Failed to add comment");
+      },
+    }
+  );
 
-  const { mutateAsync: deleteCommentMutation} = useMutation({
+  const { mutateAsync: deleteCommentMutation } = useMutation({
     mutationFn: removeComment,
     onSuccess: () => {
       toast.success("Comment deleted successfully!");
@@ -199,7 +233,9 @@ export default function App() {
     if (handleAuthenticatedAction()) {
       if (favoriteData?.isFavorite) {
         await unsave({ favorite_id: favoriteData.favorite_id! });
-        queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isFavorite });
+        queryClient.invalidateQueries({
+          queryKey: useQueryCacheKeys.isFavorite,
+        });
       } else {
         await save({ circuit_id });
       }
@@ -208,11 +244,12 @@ export default function App() {
 
   const handleComment = async () => {
     if (!newComment.trim()) return;
-    
+
     if (handleAuthenticatedAction()) {
       await commentMutation({
         circuit_id,
         comment: newComment.trim(),
+        rating: newRating,
       });
     }
   };
@@ -220,7 +257,6 @@ export default function App() {
   const handleDeleteComment = async (comment_id: number) => {
     if (handleAuthenticatedAction()) {
       await deleteCommentMutation({ comment_id });
-      queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isFavorite });
     }
   };
 
@@ -235,27 +271,30 @@ export default function App() {
             <Skeleton className="h-6 w-[200px]" /> {/* Name */}
           </div>
         </div>
-  
+
         {/* Title Section */}
         <div className="space-y-4">
           <Skeleton className="h-10 w-[300px]" /> {/* Title */}
           <Skeleton className="h-6 w-[200px]" /> {/* Location */}
           <Skeleton className="h-4 w-full max-w-[600px]" /> {/* Description */}
         </div>
-  
+
         {/* Map Placeholder */}
         <Skeleton className="h-[350px] w-full rounded-lg" />
-  
+
         {/* Places to Visit Section */}
         <div className="space-y-6">
           <Skeleton className="h-8 w-[200px]" /> {/* Section title */}
-          
           {/* Place Cards */}
           {[...Array(3)].map((_, i) => (
-            <div key={i} className="flex items-start space-x-4 border rounded-lg p-4">
+            <div
+              key={i}
+              className="flex items-start space-x-4 border rounded-lg p-4"
+            >
               <div className="flex-1 space-y-3">
                 <Skeleton className="h-6 w-[200px]" /> {/* Place name */}
-                <Skeleton className="h-4 w-full max-w-[400px]" /> {/* Description */}
+                <Skeleton className="h-4 w-full max-w-[400px]" />{" "}
+                {/* Description */}
               </div>
               <div className="flex flex-col items-end space-y-2">
                 <Skeleton className="h-4 w-[60px]" /> {/* Duration */}
@@ -269,7 +308,9 @@ export default function App() {
   }
 
   if (isCircuitError || !circuitWithPOI) {
-    return <div className="w-full p-6 text-center">Error loading circuit data</div>;
+    return (
+      <div className="w-full p-6 text-center">Error loading circuit data</div>
+    );
   }
 
   const isLikeLoading = isLiking || isUnliking;
@@ -297,7 +338,9 @@ export default function App() {
         {/* Circuit title and description */}
         <div className="space-y-2">
           <h1 className="text-3xl font-bold">{circuitWithPOI.name}</h1>
-          <h1 className="text-xl font-bold">{circuitWithPOI.city}, {circuitWithPOI.country}</h1>
+          <h1 className="text-xl font-bold">
+            {circuitWithPOI.city}, {circuitWithPOI.country}
+          </h1>
           <p className="text-muted-foreground">{circuitWithPOI.description}</p>
         </div>
 
@@ -327,33 +370,36 @@ export default function App() {
 
           <div className="relative">
             <div className="absolute left-6 top-0 bottom-0 w-0.5 bg-gray-200" />
-            {circuitWithPOI.pois && circuitWithPOI.pois.map((poi, index) => (
-              <div key={index} className="relative pl-16 pb-4">
-                <div className="absolute left-4 w-4 h-4 rounded-full bg-primary border-4 border-background" />
-                <div className="p-4 rounded-lg border hover:shadow-sm transition-shadow bg-background">
-                  <div className="flex items-start flex-col sm:flex-row justify-between gap-4">
-                    <div className="space-y-2">
-                      <h3 className="font-semibold text-lg">{poi.name}</h3>
-                      <p className="text-muted-foreground">{poi.description}</p>
-                    </div>
-                    <div className="flex flex-col gap-2 text-sm text-muted-foreground whitespace-nowrap">
-                      {poi.estimated_duration && (
-                        <div className="flex items-center gap-2">
-                          <Timer className="w-4 h-4" />
-                          {poi.estimated_duration} min
-                        </div>
-                      )}
-                      {poi.category && (
-                        <div className="flex items-center gap-2 max-w-1/3">
-                          <Flag className="w-4 h-4" />
-                          {poi.category}
-                        </div>
-                      )}
+            {circuitWithPOI.pois &&
+              circuitWithPOI.pois.map((poi, index) => (
+                <div key={index} className="relative pl-16 pb-4">
+                  <div className="absolute left-4 w-4 h-4 rounded-full bg-primary border-4 border-background" />
+                  <div className="p-4 rounded-lg border hover:shadow-sm transition-shadow bg-background">
+                    <div className="flex items-start flex-col sm:flex-row justify-between gap-4">
+                      <div className="space-y-2">
+                        <h3 className="font-semibold text-lg">{poi.name}</h3>
+                        <p className="text-muted-foreground">
+                          {poi.description}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-2 text-sm text-muted-foreground whitespace-nowrap">
+                        {poi.estimated_duration && (
+                          <div className="flex items-center gap-2">
+                            <Timer className="w-4 h-4" />
+                            {poi.estimated_duration} min
+                          </div>
+                        )}
+                        {poi.category && (
+                          <div className="flex items-center gap-2 max-w-1/3">
+                            <Flag className="w-4 h-4" />
+                            {poi.category}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
 
@@ -366,23 +412,47 @@ export default function App() {
               variant="outline"
               className="flex-1 flex items-center justify-center gap-2"
               onClick={handleLike}
-              disabled={isAuthenticated?.isAuthenticated ? (isLikeLoading || isLikedLoading) : false}
+              disabled={
+                isAuthenticated?.isAuthenticated
+                  ? isLikeLoading || isLikedLoading
+                  : false
+              }
             >
-              <Heart className={`w-5 h-5 ${likeData?.isLiked ? "fill-rose-500 text-rose-500" : ""}`} />
-              {isLikeLoading 
-                ? (likeData?.isLiked ? "Unliking..." : "Liking...") 
-                : (likeData?.isLiked ? "Unlike" : "Like")}
+              <Heart
+                className={`w-5 h-5 ${
+                  likeData?.isLiked ? "fill-rose-500 text-rose-500" : ""
+                }`}
+              />
+              {isLikeLoading
+                ? likeData?.isLiked
+                  ? "Unliking..."
+                  : "Liking..."
+                : likeData?.isLiked
+                ? "Unlike"
+                : "Like"}
             </Button>
             <Button
               variant="outline"
               className="flex-1 flex items-center justify-center gap-2"
               onClick={handleSave}
-              disabled={isAuthenticated?.isAuthenticated ? (isFavoriteLoading || isFavoritedLoading) : false}
+              disabled={
+                isAuthenticated?.isAuthenticated
+                  ? isFavoriteLoading || isFavoritedLoading
+                  : false
+              }
             >
-              <Bookmark className={`w-5 h-5 ${favoriteData?.isFavorite ? "fill-primary text-primary" : ""}`} />
-              {isFavoriteLoading 
-                ? (favoriteData?.isFavorite ? "Removing..." : "Saving...") 
-                : (favoriteData?.isFavorite ? "Remove from Favorites" : "Add to Favorites")}
+              <Bookmark
+                className={`w-5 h-5 ${
+                  favoriteData?.isFavorite ? "fill-primary text-primary" : ""
+                }`}
+              />
+              {isFavoriteLoading
+                ? favoriteData?.isFavorite
+                  ? "Removing..."
+                  : "Saving..."
+                : favoriteData?.isFavorite
+                ? "Remove from Favorites"
+                : "Add to Favorites"}
             </Button>
           </div>
         </div>
@@ -397,14 +467,24 @@ export default function App() {
           <div className="flex flex-col space-y-3 p-4 rounded-lg border">
             {!isAuthenticated ? (
               <div className="flex flex-col items-center py-4 space-y-3">
-                <p className="text-muted-foreground">Sign in to leave a comment</p>
-                <Button onClick={redirectToLogin} className="flex items-center gap-2">
+                <p className="text-muted-foreground">
+                  Sign in to leave a review
+                </p>
+                <Button
+                  onClick={redirectToLogin}
+                  className="flex items-center gap-2"
+                >
                   <LogIn className="w-4 h-4" />
                   Sign In
                 </Button>
               </div>
             ) : (
               <>
+                <StarRating
+                  rating={newRating}
+                  onRatingChange={setNewRating}
+                  disabled={isCommenting || !circuitWithPOI}
+                />
                 <Textarea
                   placeholder="Share your thoughts..."
                   value={newComment}
@@ -420,7 +500,7 @@ export default function App() {
                     className="flex items-center gap-2"
                   >
                     <Send className="w-4 h-4" />
-                    {isCommenting ? "Posting..." : "Post Comment"}
+                    {isCommenting ? "Submitting..." : "Submit Review"}
                   </Button>
                 </div>
               </>
@@ -428,7 +508,15 @@ export default function App() {
           </div>
 
           {/* Existing Comments */}
-          <Comments comments={comments} commentsLoading={commentsLoading} commentsError={commentsError} currentUser={isAuthenticated?.isAuthenticated ? isAuthenticated?.user_id : null} onDelete={handleDeleteComment} />
+          <Comments
+            comments={comments}
+            commentsLoading={commentsLoading}
+            commentsError={commentsError}
+            currentUser={
+              isAuthenticated?.isAuthenticated ? isAuthenticated?.user_id : null
+            }
+            onDelete={handleDeleteComment}
+          />
         </div>
       </main>
     </div>
