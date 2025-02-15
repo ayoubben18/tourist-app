@@ -15,8 +15,8 @@ export const authenticatedAction = createSafeAction.setMiddleware(async () => {
   
   
     return {
-      userId: user.id,
-      email: user.email,
+      ...user,
+
     };
   });
   

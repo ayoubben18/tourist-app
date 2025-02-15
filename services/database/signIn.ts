@@ -34,6 +34,8 @@ const signOut = publicAction.create(async ({}) => {
   await supabase.auth.signOut();
 });
 
+
+
 const getRole = authenticatedAction.create(
   async (context) => {
     const role = await db
@@ -46,4 +48,20 @@ const getRole = authenticatedAction.create(
   }
 );
 
-export { signIn, signOut, getRole };
+
+const getUser = publicAction.create(async () => {
+  const supabase = await createClient();
+  const { data } = await supabase.auth.getUser();
+  if (!data) return null;
+
+  const user = await db
+    .select()
+    .from(users_additional_info)
+    .where(eq(users_additional_info.id, data.user!.id))
+    .then(res => res[0]);
+    
+
+    return user;
+});
+
+export { signIn, signOut, getRole,getUser };

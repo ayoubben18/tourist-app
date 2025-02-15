@@ -41,3 +41,21 @@ export const signInSchema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(8, "Password must be at least 8 characters long"),
 });
+
+
+export const updateProfileSchema = z.object({
+  firstName: z.string().optional(),
+  lastName: z.string().optional(),
+  bio: z.string().optional(),
+  email: z.string().email().optional(),
+  phone: z.string()
+    .regex(/^\+[1-9]\d{1,14}$/, "Phone number must be in E.164 format")
+    .optional(),
+  profile_picture: z.any().optional(),
+  password: z.union([z.string().min(6), z.literal("")]).optional(),
+}).refine(data => {
+  return Object.values(data).some(value => value !== undefined && value !== "");
+}, {
+  message: "At least one field must be provided for update",
+});
+
