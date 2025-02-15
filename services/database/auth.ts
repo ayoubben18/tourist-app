@@ -212,6 +212,7 @@ const getUserInfo = authenticatedAction.create(async ({ userId, email }) => {
       id: users_additional_info.id,
       full_name: users_additional_info.full_name,
       avatar_url: users_additional_info.avatar_url,
+      bio: users_additional_info.bio,
       role: users_additional_info.role,
     })
     .from(users_additional_info)
