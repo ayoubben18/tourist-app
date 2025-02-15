@@ -60,7 +60,7 @@ const updateProfile = authenticatedAction.create(
         console.log('🖼 Uploading profile picture...');
         const { data: uploadData, error: uploadError } = await supabase.storage
           .from("profile_pictures")
-          .upload(`${context.id}`, profile_picture, { upsert: true });
+          .upload(`${context.userId}`, profile_picture, { upsert: true });
 
         if (uploadError) {
           console.error('❌ Profile picture upload failed:', uploadError);
@@ -70,7 +70,7 @@ const updateProfile = authenticatedAction.create(
         console.log('✅ Profile picture uploaded successfully');
         const { data: pfp_url } = await supabase.storage
           .from("profile_pictures")
-          .getPublicUrl(`${context.id}`);
+          .getPublicUrl(`${context.userId}`);
 
         avatar_url = pfp_url.publicUrl;
       }
@@ -83,13 +83,13 @@ const updateProfile = authenticatedAction.create(
             const fullName = `${firstName?.trim() || context.user_metadata?.firstName || ''} ${lastName?.trim() || context.user_metadata?.lastName || ''}`.trim();
             await tx.update(users_additional_info)
               .set({ full_name: fullName, bio: bio?.trim() || context.user_metadata?.bio || "" })  // ← Added `bio`
-              .where(eq(users_additional_info.id, context.id));
+              .where(eq(users_additional_info.id, context.userId));
           }
 
           if (avatar_url) {
             await tx.update(users_additional_info)
               .set({ avatar_url })
-              .where(eq(users_additional_info.id, context.id));
+              .where(eq(users_additional_info.id, context.userId));
           }
         });
         console.log('✅ Database update completed');
