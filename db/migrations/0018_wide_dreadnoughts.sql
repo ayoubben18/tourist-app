@@ -1,0 +1,1 @@
+ALTER TABLE "guide_profiles" ADD COLUMN "number_of_reviews" integer DEFAULT 0;
