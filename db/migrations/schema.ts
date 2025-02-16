@@ -781,6 +781,16 @@ export const guide_status = pgEnum("guide_status", [
   "rejected",
 ]);
 
+export const daysOfWeek = pgEnum("days_of_week", [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+]);
+
 export const guide_profiles = pgTable("guide_profiles", {
   id: uuid("id")
     .references(() => users_additional_info.id)
@@ -790,6 +800,8 @@ export const guide_profiles = pgTable("guide_profiles", {
     .references(() => objectsInStorage.id)
     .notNull(),
   years_of_experience: integer("years_of_experience"),
+  available_days: daysOfWeek("available_days").array(), // Array of valid days
+  available_hours: json("available_hours"), // JSON mapping days to time slots
   rating: decimal("rating", { precision: 3, scale: 2 }),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
   verified_at: timestamp("verified_at", { mode: "string" }),
