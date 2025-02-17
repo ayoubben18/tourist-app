@@ -781,17 +781,16 @@ export const guide_status = pgEnum("guide_status", [
   "rejected",
 ]);
 
-export const daysOfWeek = pgEnum("days_of_week", [
-  "Monday",
-  "Tuesday",
-  "Wednesday",
-  "Thursday",
-  "Friday",
-  "Saturday",
-  "Sunday",
-]);
+type DaysOfWeek =
+  | "Monday"
+  | "Tuesday"
+  | "Wednesday"
+  | "Thursday"
+  | "Friday"
+  | "Saturday"
+  | "Sunday";
 
-type AvailableHours = Record<string, string[]>;
+type AvailableHours = Record<DaysOfWeek, string[]>;
 
 export const guide_profiles = pgTable("guide_profiles", {
   id: uuid("id")
@@ -802,7 +801,6 @@ export const guide_profiles = pgTable("guide_profiles", {
     .references(() => objectsInStorage.id)
     .notNull(),
   years_of_experience: integer("years_of_experience"),
-  available_days: daysOfWeek("available_days").array(), // Array of valid days
   available_hours: json("available_hours").$type<AvailableHours>(), // JSON mapping days to time slots
   rating: decimal("rating", { precision: 3, scale: 2 }),
   number_of_reviews: integer("number_of_reviews").default(0),
@@ -848,10 +846,10 @@ export const likes = pgTable("likes", {
 
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),
-  circuit_id: integer("circuit_id").references(() =>circuits.id),
+  circuit_id: integer("circuit_id").references(() => circuits.id),
   user_id: uuid("user_id").references(() => usersInAuth.id),
   created_at: timestamp("created_at").defaultNow(),
-})
+});
 
 export const guides_comments = pgTable("guides_comments", {
   id: serial("id").primaryKey(),
@@ -860,8 +858,7 @@ export const guides_comments = pgTable("guides_comments", {
   comment: text("comment"),
   rating: integer("rating"),
   created_at: timestamp("created_at").defaultNow(),
-})
-
+});
 
 export type Circuit = typeof circuits.$inferSelect;
 export type UsersAdditionalInfo = typeof users_additional_info.$inferSelect;
@@ -873,4 +870,3 @@ export type CircuitComments = typeof circuit_comments.$inferSelect;
 export type Like = typeof likes.$inferSelect;
 export type Favorite = typeof favorites.$inferSelect;
 export type GuidesComments = typeof guides_comments.$inferSelect;
-

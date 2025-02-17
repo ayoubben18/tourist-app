@@ -110,7 +110,10 @@ export default function guideDetails() {
           rating: newRating,
         });
       } catch (err: any) {
-        if (err.message?.includes('Validation failed') && err.message?.includes('rating')) {
+        if (
+          err.message?.includes("Validation failed") &&
+          err.message?.includes("rating")
+        ) {
           toast.error("You must give at least one star.");
         } else {
           toast.error("Failed to add review");
@@ -158,17 +161,17 @@ export default function guideDetails() {
                   <Skeleton className="h-10 w-full" />
                 </div>
               </CardContent>
-            ) : (
+            ) : guide ? (
               <>
                 <CardHeader className="text-center">
                   <div className="flex flex-col items-center space-y-4">
                     <Avatar className="w-32 h-32">
                       <AvatarImage
-                        src={guide?.avatar_url || ""}
-                        alt={guide?.full_name || "Guide"}
+                        src={guide.avatar_url || ""}
+                        alt={guide.full_name || "Guide"}
                       />
                       <AvatarFallback className="text-3xl">
-                        {guide?.full_name
+                        {guide.full_name
                           ?.split(" ")
                           .map((name) => name[0])
                           .join("") || "G"}
@@ -176,9 +179,9 @@ export default function guideDetails() {
                     </Avatar>
                     <div>
                       <CardTitle className="text-2xl font-bold">
-                        {guide?.full_name}
+                        {guide.full_name}
                       </CardTitle>
-                      {guide?.rating && (
+                      {guide.rating && (
                         <div className="flex items-center justify-center mt-2">
                           <Star className="w-5 h-5 text-yellow-400 fill-current" />
                           <span className="ml-1 text-lg font-semibold">
@@ -192,7 +195,7 @@ export default function guideDetails() {
                 <CardContent>
                   <div className="space-y-6">
                     {/* Experience */}
-                    {guide?.years_of_experience && (
+                    {guide.years_of_experience && (
                       <div className="flex items-center">
                         <Award className="w-5 h-5 mr-3 text-blue-500" />
                         <div>
@@ -207,7 +210,7 @@ export default function guideDetails() {
                     )}
 
                     {/* Price */}
-                    {guide?.price_per_hour && (
+                    {guide.price_per_hour && (
                       <div className="flex items-center">
                         <DollarSign className="w-5 h-5 mr-3 text-green-500" />
                         <div>
@@ -222,25 +225,30 @@ export default function guideDetails() {
                     )}
 
                     {/* Availability Section */}
-                    {guide?.available_days && guide?.available_hours && (
-                      <div className="space-y-4">
-                        <h3 className="text-lg font-semibold">Availability</h3>
-                        <div className="flex flex-wrap gap-2">
-                          {guide.available_days.map((day) => (
-                            <span
-                              key={day}
-                              className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full"
-                            >
-                              {day}
-                            </span>
-                          ))}
-                        </div>
+                    {guide.available_hours &&
+                      Object.values(guide.available_hours).length > 0 && (
+                        <div className="space-y-4">
+                          <h3 className="text-lg font-semibold">
+                            Availability
+                          </h3>
+                          <div className="flex flex-wrap gap-2">
+                            {Object.values(guide.available_hours).map(
+                              ([day, hours]) => (
+                                <span
+                                  key={day}
+                                  className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full"
+                                >
+                                  {day}
+                                </span>
+                              )
+                            )}
+                          </div>
 
-                        <AvailabilityDisplay
-                          availableHours={guide.available_hours}
-                        />
-                      </div>
-                    )}
+                          <AvailabilityDisplay
+                            availableHours={guide.available_hours}
+                          />
+                        </div>
+                      )}
 
                     {/* Book Button */}
                     <Button
@@ -256,6 +264,12 @@ export default function guideDetails() {
                   </div>
                 </CardContent>
               </>
+            ) : (
+              <CardContent>
+                <p className="text-muted-foreground">
+                  Guide not found. Please try again later.
+                </p>
+              </CardContent>
             )}
           </Card>
         </div>
@@ -336,7 +350,9 @@ export default function guideDetails() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-red-500 hover:text-red-700"
-                                onClick={() => handleDeleteComment(comment.id, guide_id)}
+                                onClick={() =>
+                                  handleDeleteComment(comment.id, guide_id)
+                                }
                                 disabled={isDeleting}
                               >
                                 <Trash2 className="h-4 w-4" />

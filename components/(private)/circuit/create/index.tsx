@@ -100,7 +100,9 @@ const CreateCircuitStepper = () => {
             <Button
               type={step === steps.length ? "submit" : "button"}
               onClick={handleNext}
-              disabled={!form.formState.isValid}
+              disabled={
+                step === 1 ? !form.getValues("city") : !form.formState.isValid
+              }
               className="gap-2"
             >
               {step === steps.length ? "Create" : "Next"}

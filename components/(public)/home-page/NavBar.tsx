@@ -26,9 +26,14 @@ import {
 import { Button } from "@/components/ui/button";
 import { Settings, User } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import {  useQueryClient } from "@tanstack/react-query";
+import { useQueryClient } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const navLinks: { title: string; href: string }[] = [
   { title: "Home", href: ROUTES.public.home },
@@ -38,10 +43,9 @@ const navLinks: { title: string; href: string }[] = [
   { title: "Contact", href: ROUTES.public.contact },
 ];
 
-
 export function Navbar() {
   const router = useRouter();
-  const { isAuthenticated, isAuthenticatedLoading } = useIsAuthenticated()
+  const { isAuthenticated, isAuthenticatedLoading } = useIsAuthenticated();
 
   return (
     <div className=" flex items-center justify-between p-6">
@@ -171,13 +175,15 @@ export function UserNav() {
     queryClient.invalidateQueries({ queryKey: ["isAuthenticated"] });
     queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isFavorite });
     queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isLiked });
-    queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isUserAuthenticated });
+    queryClient.invalidateQueries({
+      queryKey: useQueryCacheKeys.isUserAuthenticated,
+    });
     router.push(ROUTES.public.home);
   };
 
   return (
-    <DropdownMenu>
-      <DropdownMenuTrigger asChild className="h-10 w-10">
+    <Popover>
+      <PopoverTrigger asChild>
         <Button variant="ghost" className="relative h-10 w-10 rounded-full p-0">
           <Avatar className="h-10 w-10">
             <AvatarImage
@@ -193,40 +199,46 @@ export function UserNav() {
             </AvatarFallback>
           </Avatar>
         </Button>
-      </DropdownMenuTrigger>
-      <DropdownMenuContent align="end">
-        <DropdownMenuLabel className="font-normal">
+      </PopoverTrigger>
+      <PopoverContent className=" p-0" align="end">
+        <div className="p-4 border-b">
           <div className="flex flex-col space-y-1">
             <p className="text-sm font-medium leading-none">
               {userInfo?.full_name}
             </p>
             <p className="text-xs text-muted-foreground">{userInfo?.email}</p>
           </div>
-        </DropdownMenuLabel>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem onClick={() => router.push(ROUTES.private.profile)}>
-          <User className="mr-2 h-4 w-4" />
-          <span>Profile</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem>
-          <Settings className="mr-2 h-4 w-4" />
-          <span>Settings</span>
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-
-        <DropdownMenuItem>
-          <Moon className="mr-2 h-4 w-4" />
-          <span>Dark Mode</span>
-          {/* Add your dark mode toggle implementation here */}
-        </DropdownMenuItem>
-        <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={handleSignOut} disabled={isSigningOut}>
-          <LogOut className="mr-2 h-4 w-4" />
-          <span>Sign Out</span>
-        </DropdownMenuItem>
-      </DropdownMenuContent>
-    </DropdownMenu>
+        </div>
+        <div className="p-2">
+          <div className="grid gap-1">
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={() => router.push(ROUTES.private.profile)}
+            >
+              <User className="mr-2 h-4 w-4" />
+              <span>Profile</span>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start">
+              <Settings className="mr-2 h-4 w-4" />
+              <span>Settings</span>
+            </Button>
+            <Button variant="ghost" className="w-full justify-start">
+              <Moon className="mr-2 h-4 w-4" />
+              <span>Dark Mode</span>
+            </Button>
+            <Button
+              variant="ghost"
+              className="w-full justify-start"
+              onClick={handleSignOut}
+              disabled={isSigningOut}
+            >
+              <LogOut className="mr-2 h-4 w-4" />
+              <span>Sign Out</span>
+            </Button>
+          </div>
+        </div>
+      </PopoverContent>
+    </Popover>
   );
 }

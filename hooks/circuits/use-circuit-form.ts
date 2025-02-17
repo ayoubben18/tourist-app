@@ -17,12 +17,12 @@ export const useCircuitForm = () => {
   const form = useForm<z.infer<typeof createCircuitSchema>>({
     resolver: zodResolver(createCircuitSchema),
     defaultValues: {
-      city: "",
+      city: undefined,
       guideId: undefined,
       isPublic: true,
       places: [],
-      startingPlace: "[0,0]",
-      startTime: addDays(new Date(), 1),
+      startingPlace: undefined,
+      startTime: undefined,
     },
   });
 

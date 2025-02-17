@@ -30,7 +30,7 @@ const createCircuit = authenticatedAction.create(
           city,
           name: response.data.result.name,
           country: response.data.result.address_components?.[0]?.short_name,
-          coordinates: response.data.result.geometry?.location,
+          coordinates: JSON.stringify(response.data.result.geometry?.location),
         }
       );
     }
@@ -62,7 +62,9 @@ const createCircuit = authenticatedAction.create(
             place,
             name: response.data.result.name,
             city,
-            coordinates: response.data.result.geometry?.location,
+            coordinates: JSON.stringify(
+              response.data.result.geometry?.location
+            ),
           }
         );
       } else {

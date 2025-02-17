@@ -134,6 +134,13 @@
       "when": 1739711561372,
       "tag": "0018_wide_dreadnoughts",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1739829321653,
+      "tag": "0019_mixed_night_thrasher",
+      "breakpoints": true
     }
   ]
 }
