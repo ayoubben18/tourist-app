@@ -127,6 +127,13 @@
       "when": 1739575415767,
       "tag": "0017_shallow_smiling_tiger",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1739711561372,
+      "tag": "0018_wide_dreadnoughts",
+      "breakpoints": true
     }
   ]
 }

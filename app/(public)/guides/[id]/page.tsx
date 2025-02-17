@@ -15,12 +15,21 @@ import {
 } from "@/services/database/guide-comments";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, DollarSign, MessageCircle, Star, Trash2 } from "lucide-react";
+import {
+  Award,
+  Clock,
+  DollarSign,
+  MessageCircle,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
 import { toast } from "sonner";
 import StarRating from "@/components/shared/StarRating";
+import AvailabilityDisplay from "@/components/shared/AvailabilityDisplay";
+import { z } from "zod";
 
 export default function guideDetails() {
   const { id } = useParams();
@@ -59,9 +68,6 @@ export default function guideDetails() {
           queryKey: useQueryCacheKeys.commentsOfGuide(guide_id),
         });
       },
-      onError: () => {
-        toast.error("Failed to add comment");
-      },
     }
   );
 
@@ -97,17 +103,25 @@ export default function guideDetails() {
     if (!newComment.trim()) return;
 
     if (handleAuthenticatedAction()) {
-      await commentMutation({
-        guide_id,
-        comment: newComment.trim(),
-        rating: newRating,
-      });
+      try {
+        await commentMutation({
+          guide_id,
+          comment: newComment.trim(),
+          rating: newRating,
+        });
+      } catch (err: any) {
+        if (err.message?.includes('Validation failed') && err.message?.includes('rating')) {
+          toast.error("You must give at least one star.");
+        } else {
+          toast.error("Failed to add review");
+        }
+      }
     }
   };
 
-  const handleDeleteComment = async (comment_id: number) => {
+  const handleDeleteComment = async (comment_id: number, guide_id: string) => {
     if (handleAuthenticatedAction()) {
-      await deleteCommentMutation({ comment_id });
+      await deleteCommentMutation({ comment_id, guide_id });
     }
   };
 
@@ -200,8 +214,31 @@ export default function guideDetails() {
                           <h3 className="text-sm text-muted-foreground">
                             Hourly Rate
                           </h3>
-                          <p className="font-medium">{guide.price_per_hour}DHS</p>
+                          <p className="font-medium">
+                            {guide.price_per_hour} DHS
+                          </p>
                         </div>
+                      </div>
+                    )}
+
+                    {/* Availability Section */}
+                    {guide?.available_days && guide?.available_hours && (
+                      <div className="space-y-4">
+                        <h3 className="text-lg font-semibold">Availability</h3>
+                        <div className="flex flex-wrap gap-2">
+                          {guide.available_days.map((day) => (
+                            <span
+                              key={day}
+                              className="px-3 py-1 text-sm font-medium bg-gray-100 text-gray-700 rounded-full"
+                            >
+                              {day}
+                            </span>
+                          ))}
+                        </div>
+
+                        <AvailabilityDisplay
+                          availableHours={guide.available_hours}
+                        />
                       </div>
                     )}
 
@@ -210,7 +247,6 @@ export default function guideDetails() {
                       className="w-full mt-6"
                       onClick={() => {
                         if (handleAuthenticatedAction()) {
-                          // Handle booking logic here
                           toast.success("Booking initiated!");
                         }
                       }}
@@ -300,7 +336,7 @@ export default function guideDetails() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-red-500 hover:text-red-700"
-                                onClick={() => handleDeleteComment(comment.id)}
+                                onClick={() => handleDeleteComment(comment.id, guide_id)}
                                 disabled={isDeleting}
                               >
                                 <Trash2 className="h-4 w-4" />

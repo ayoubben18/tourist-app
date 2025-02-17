@@ -48,10 +48,13 @@ const getGuides = authenticatedAction.create(
         avatar_url: users_additional_info.avatar_url,
         years_of_experience: guide_profiles.years_of_experience,
         rating: guide_profiles.rating,
+        number_of_reviews: guide_profiles.number_of_reviews,
         price_per_hour: guide_profiles.price_per_hour,
         verification_status: guide_profiles.verification_status,
         authorization_document: guide_profiles.authorization_document,
         verified_at: guide_profiles.verified_at,
+        available_days: guide_profiles.available_days,
+        available_hours: guide_profiles.available_hours,
       })
       .from(guide_profiles)
       .innerJoin(
@@ -68,7 +71,7 @@ const getGuide = publicAction.create(
   z.object({
     guide_id: z.string(),
   }),
-  async ({ guide_id }) => {
+  async ({ guide_id }) : Promise<GuideDTO>  => {
     const guide = await db
       .select({
         id: guide_profiles.id,
@@ -76,7 +79,10 @@ const getGuide = publicAction.create(
         avatar_url: users_additional_info.avatar_url,
         years_of_experience: guide_profiles.years_of_experience,
         rating: guide_profiles.rating,
+        number_of_reviews: guide_profiles.number_of_reviews,
         price_per_hour: guide_profiles.price_per_hour,
+        available_days: guide_profiles.available_days,
+        available_hours: guide_profiles.available_hours,
       })
       .from(guide_profiles)
       .innerJoin(

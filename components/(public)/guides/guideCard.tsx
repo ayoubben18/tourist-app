@@ -41,8 +41,9 @@ export function GuideCard({ guide }: GuideCardProps) {
         <div className="flex items-center justify-between">
           <div className="flex items-center text-yellow-500 ">
             <Star className="w-5 h-5 fill-yellow-500" />
-            <span className="ml-1 text-sm font-medium">
+            <span className="ml-1 text-sm font-medium flex gap-1">
               {guide.rating ?? "No rating"}
+              <p className="font-thin text-gray-700">({guide.number_of_reviews})</p>
             </span>
           </div>
           <p className="text-sm font-semibold">
