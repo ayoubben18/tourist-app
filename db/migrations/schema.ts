@@ -756,11 +756,11 @@ export const circuits = pgTable("circuits", {
   name: text("name").notNull(),
   description: text("description"),
   estimated_duration: integer("estimated_duration"), // in minutes
-
   distance: decimal("distance", { precision: 10, scale: 2 }), // in kilometers
   created_at: timestamp("created_at").defaultNow(),
   is_public: boolean("is_public").default(true),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
+  number_of_reviews: integer("number_of_reviews").default(0)
 });
 
 export const circuit_points = pgTable("circuit_points", {

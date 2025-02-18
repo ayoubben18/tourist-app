@@ -1,2 +1,2 @@
-export { SearchAndFilters } from "./SearchAndFilters";
-export { CircuitCard } from "./CircuitCard";
+export { SearchAndFilters } from "./search-and-filters";
+export { CircuitCard } from "./circuit-card";

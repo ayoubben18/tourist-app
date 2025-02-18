@@ -25,7 +25,13 @@ const useQueryCacheKeys = {
     "commentsOfCircuit",
     circuit_id,
   ],
-  guides: () => ["guides"],
+  guides: (searchProperties: any) => [
+    "guides",
+    searchProperties.searchTerm,
+    searchProperties.duration,
+    searchProperties.distance,
+    searchProperties.rating,
+  ],
   guide: (guide_id: string) => [
     "guide",
     guide_id,

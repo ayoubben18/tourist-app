@@ -8,21 +8,10 @@ import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useIsAuthenticated } from "@/hooks/use-auth";
 import { getGuide } from "@/services/database/guide";
-import {
-  addComment,
-  getComments,
-  removeComment,
-} from "@/services/database/guide-comments";
+import { getComments, removeComment } from "@/services/database/guide-comments";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  Award,
-  Clock,
-  DollarSign,
-  MessageCircle,
-  Star,
-  Trash2,
-} from "lucide-react";
+import { Award, DollarSign, MessageCircle, Star, Trash2 } from "lucide-react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -30,12 +19,11 @@ import { toast } from "sonner";
 import StarRating from "@/components/shared/StarRating";
 import AvailabilityDisplay from "@/components/shared/AvailabilityDisplay";
 import { z } from "zod";
+import AddGuideReviewForm from "@/components/(public)/guides/guide-review-form";
 
 export default function guideDetails() {
   const { id } = useParams();
   const guide_id = String(id);
-  const [newComment, setNewComment] = useState("");
-  const [newRating, setNewRating] = useState(0);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isAuthenticated } = useIsAuthenticated();
@@ -57,28 +45,16 @@ export default function guideDetails() {
     queryFn: () => getComments({ guide_id: guide_id }),
   });
 
-  const { mutateAsync: commentMutation, isPending: isCommenting } = useMutation(
-    {
-      mutationFn: addComment,
-      onSuccess: () => {
-        toast.success("Comment added successfully!");
-        setNewComment("");
-        setNewRating(0);
-        queryClient.invalidateQueries({
-          queryKey: useQueryCacheKeys.commentsOfGuide(guide_id),
-        });
-      },
-    }
-  );
-
   const { mutateAsync: deleteCommentMutation, isPending: isDeleting } =
     useMutation({
       mutationFn: removeComment,
       onSuccess: () => {
         toast.success("Comment deleted successfully!");
-        setNewComment("");
         queryClient.invalidateQueries({
           queryKey: useQueryCacheKeys.commentsOfGuide(guide_id),
+        });
+        queryClient.invalidateQueries({
+          queryKey: useQueryCacheKeys.guide(guide_id),
         });
       },
       onError: () => {
@@ -99,32 +75,9 @@ export default function guideDetails() {
     return true;
   };
 
-  const handleComment = async () => {
-    if (!newComment.trim()) return;
-
+  const handleDeleteComment = async (comment_id: number) => {
     if (handleAuthenticatedAction()) {
-      try {
-        await commentMutation({
-          guide_id,
-          comment: newComment.trim(),
-          rating: newRating,
-        });
-      } catch (err: any) {
-        if (
-          err.message?.includes("Validation failed") &&
-          err.message?.includes("rating")
-        ) {
-          toast.error("You must give at least one star.");
-        } else {
-          toast.error("Failed to add review");
-        }
-      }
-    }
-  };
-
-  const handleDeleteComment = async (comment_id: number, guide_id: string) => {
-    if (handleAuthenticatedAction()) {
-      await deleteCommentMutation({ comment_id, guide_id });
+      await deleteCommentMutation({ comment_id });
     }
   };
 
@@ -184,8 +137,11 @@ export default function guideDetails() {
                       {guide.rating && (
                         <div className="flex items-center justify-center mt-2">
                           <Star className="w-5 h-5 text-yellow-400 fill-current" />
-                          <span className="ml-1 text-lg font-semibold">
+                          <span className="ml-1 text-lg font-semibold flex gap-1">
                             {guide.rating}
+                            <p className="font-thin text-gray-700">
+                              ({guide.number_of_reviews})
+                            </p>
                           </span>
                         </div>
                       )}
@@ -281,7 +237,7 @@ export default function guideDetails() {
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center">
                   <MessageCircle className="w-5 h-5 mr-2" />
-                  Reviews & Comments
+                  Reviews
                 </CardTitle>
                 {!commentsLoading && (
                   <Badge variant="secondary">
@@ -292,6 +248,12 @@ export default function guideDetails() {
               </div>
             </CardHeader>
             <CardContent className="space-y-6">
+              {/* Add Comment Section */}
+              {isAuthenticated && isAuthenticated.isAuthenticated && isAuthenticated.user_id != guide_id && (
+                <div className="mb-6">
+                  <AddGuideReviewForm guide_id={guide_id} />
+                </div>
+              )}
               {commentsLoading ? (
                 Array(3)
                   .fill(0)
@@ -319,6 +281,7 @@ export default function guideDetails() {
               ) : comments && comments.length > 0 ? (
                 comments.map((comment) => (
                   <div key={comment.id} className="space-y-4">
+                    <Separator />
                     <div className="flex items-start space-x-4">
                       <Avatar className="w-10 h-10">
                         <AvatarImage
@@ -350,9 +313,7 @@ export default function guideDetails() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6 text-red-500 hover:text-red-700"
-                                onClick={() =>
-                                  handleDeleteComment(comment.id, guide_id)
-                                }
+                                onClick={() => handleDeleteComment(comment.id)}
                                 disabled={isDeleting}
                               >
                                 <Trash2 className="h-4 w-4" />
@@ -377,7 +338,6 @@ export default function guideDetails() {
                         </div>
                       </div>
                     </div>
-                    <Separator />
                   </div>
                 ))
               ) : (
@@ -387,33 +347,6 @@ export default function guideDetails() {
                   </p>
                 </div>
               )}
-
-              {/* Add Comment Section */}
-              <div className="mt-8">
-                <h3 className="text-lg font-semibold mb-4">Leave a Review</h3>
-                <div className="mb-4">
-                  <StarRating
-                    rating={newRating}
-                    onRatingChange={setNewRating}
-                    disabled={isCommenting || !guide}
-                  />
-                </div>
-                <textarea
-                  className="w-full p-3 border rounded-md resize-none h-24 focus:outline-none focus:ring focus:ring-blue-200"
-                  placeholder="Share your experience with this guide..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  disabled={isCommenting || !guide}
-                />
-                <div className="flex justify-end mt-4">
-                  <Button
-                    onClick={handleComment}
-                    disabled={isCommenting || !newComment.trim() || !guide}
-                  >
-                    {isCommenting ? "Submitting..." : "Submit Review"}
-                  </Button>
-                </div>
-              </div>
             </CardContent>
           </Card>
         </div>

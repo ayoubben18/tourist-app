@@ -11,6 +11,7 @@ import {
   Flag,
   Send,
   LogIn,
+  Star,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useParams, useRouter } from "next/navigation";
@@ -37,8 +38,9 @@ import { Textarea } from "@/components/ui/textarea";
 import { useIsAuthenticated } from "@/hooks/use-auth";
 import { toast } from "sonner";
 import { Skeleton } from "@/components/ui/skeleton";
-import Comments from "@/components/(public)/public-circuits/CircuitComments";
+import Comments from "@/components/(public)/public-circuits/circuit-comments";
 import StarRating from "@/components/shared/StarRating";
+import AddCircuitReviewForm from "@/components/(public)/public-circuits/circuit-review-form";
 
 // Dynamically import the Map component with SSR disabled
 const Map = dynamic(() => import("@/components/shared/Maps"), {
@@ -53,17 +55,9 @@ const Map = dynamic(() => import("@/components/shared/Maps"), {
 export default function App() {
   const { id } = useParams();
   const circuit_id = Number(id);
-  const [newComment, setNewComment] = useState("");
-  const [newRating, setNewRating] = useState(0);
   const router = useRouter();
   const queryClient = useQueryClient();
   const { isAuthenticated, isAuthenticatedLoading } = useIsAuthenticated();
-
-  // Get current path for redirection after login
-  const returnPath =
-    typeof window !== "undefined"
-      ? encodeURIComponent(window.location.pathname)
-      : "";
 
   const {
     data: circuitWithPOI,
@@ -74,6 +68,7 @@ export default function App() {
     queryFn: () => getCircuitWithPOI({ circuit_id: circuit_id.toString() }),
     enabled: !isNaN(circuit_id),
   });
+  console.log("circuit: ", circuitWithPOI);
 
   const {
     data: comments,
@@ -167,6 +162,7 @@ export default function App() {
           isAuthenticated?.user_id || "0"
         ),
       });
+      queryClient.invalidateQueries( {queryKey: useQueryCacheKeys.circuitWithPOI(circuit_id)});
       toast.success("Circuit removed from favorites!");
     },
     onError: () => {
@@ -174,28 +170,11 @@ export default function App() {
     },
   });
 
-  const { mutateAsync: commentMutation, isPending: isCommenting } = useMutation(
-    {
-      mutationFn: addComment,
-      onSuccess: () => {
-        toast.success("Comment added successfully!");
-        setNewComment("");
-        setNewRating(0);
-        queryClient.invalidateQueries({
-          queryKey: useQueryCacheKeys.commentsOfCircuit(circuit_id),
-        });
-      },
-      onError: () => {
-        toast.error("Failed to add comment");
-      },
-    }
-  );
 
   const { mutateAsync: deleteCommentMutation } = useMutation({
     mutationFn: removeComment,
     onSuccess: () => {
       toast.success("Comment deleted successfully!");
-      setNewComment("");
       queryClient.invalidateQueries({
         queryKey: useQueryCacheKeys.commentsOfCircuit(circuit_id),
       });
@@ -242,17 +221,6 @@ export default function App() {
     }
   };
 
-  const handleComment = async () => {
-    if (!newComment.trim()) return;
-
-    if (handleAuthenticatedAction()) {
-      await commentMutation({
-        circuit_id,
-        comment: newComment.trim(),
-        rating: newRating,
-      });
-    }
-  };
 
   const handleDeleteComment = async (comment_id: number) => {
     if (handleAuthenticatedAction()) {
@@ -337,6 +305,13 @@ export default function App() {
 
         {/* Circuit title and description */}
         <div className="space-y-2">
+        <div className="flex items-center text-yellow-500 ">
+            <Star className="w-5 h-5 fill-yellow-500" />
+            <span className="ml-1 text-sm font-medium flex gap-1">
+              {circuitWithPOI.rating ?? "No rating"}
+              <p className="font-thin text-gray-700">({circuitWithPOI.number_of_reviews})</p>
+            </span>
+          </div>
           <h1 className="text-3xl font-bold">{circuitWithPOI.name}</h1>
           <h1 className="text-xl font-bold">
             {circuitWithPOI.city}, {circuitWithPOI.country}
@@ -460,7 +435,7 @@ export default function App() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <MessageCircle className="w-5 h-5" />
-            <h2 className="text-2xl font-semibold">Comments</h2>
+            <h2 className="text-2xl font-semibold">Reviews</h2>
           </div>
 
           {/* Comment Form */}
@@ -479,31 +454,7 @@ export default function App() {
                 </Button>
               </div>
             ) : (
-              <>
-                <StarRating
-                  rating={newRating}
-                  onRatingChange={setNewRating}
-                  disabled={isCommenting || !circuitWithPOI}
-                />
-                <Textarea
-                  placeholder="Share your thoughts..."
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  className="resize-none"
-                  rows={3}
-                />
-                <div className="flex justify-end">
-                  <Button
-                    type="submit"
-                    disabled={isCommenting || !newComment.trim()}
-                    onClick={handleComment}
-                    className="flex items-center gap-2"
-                  >
-                    <Send className="w-4 h-4" />
-                    {isCommenting ? "Submitting..." : "Submit Review"}
-                  </Button>
-                </div>
-              </>
+              <AddCircuitReviewForm circuit_id={circuit_id} />
             )}
           </div>
 

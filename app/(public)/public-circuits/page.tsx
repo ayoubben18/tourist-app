@@ -1,4 +1,4 @@
-import { CardsGrid } from "@/components/(public)/public-circuits/CardsGrid";
+import { CardsGrid } from "@/components/(public)/public-circuits/cards-grid";
 import { getPublicCircuits } from "@/services/database/circuits";
 import { Plus } from "lucide-react";
 

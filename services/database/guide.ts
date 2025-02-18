@@ -7,7 +7,7 @@ import { guide_profiles, users_additional_info } from "@/db/migrations/schema";
 import { GuideDTO } from "@/dto/guides-dto";
 import { z } from "zod";
 
-const getGuides = authenticatedAction.create(
+const getGuides = publicAction.create(
   z.object({
     searchTerm: z.string().optional(),
     yearsOfExperience: z.number().positive().optional(),

@@ -42,7 +42,7 @@ export const signInSchema = z.object({
   password: z.string().min(8, "Password must be at least 8 characters long"),
 });
 
-const createCircuitSchema = z.object({
+export const createCircuitSchema = z.object({
   city: z.string(),
   places: z.array(z.string()),
   startingPlace: z.string(),
@@ -51,4 +51,7 @@ const createCircuitSchema = z.object({
   isPublic: z.boolean(),
 });
 
-export { createCircuitSchema };
+export const createReview = z.object({
+  comment: z.string().min(1, 'Please enter a comment'),
+  rating: z.number().min(1, 'Please select a rating between 1 and 5').max(5),
+});
