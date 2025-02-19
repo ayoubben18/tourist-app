@@ -40,6 +40,12 @@ const useQueryCacheKeys = {
     "commentsOfGuide",
     guide_id,
   ],
+  pendingBookings: () => [
+    "pendingBookings"
+  ],
+  confirmedBookings: () => [
+    "confirmedBookings"
+  ]
 };
 
 export default useQueryCacheKeys;

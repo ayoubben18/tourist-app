@@ -801,7 +801,7 @@ export const guide_profiles = pgTable("guide_profiles", {
     .references(() => objectsInStorage.id)
     .notNull(),
   years_of_experience: integer("years_of_experience"),
-  available_hours: json("available_hours").$type<AvailableHours>(), // JSON mapping days to time slots
+  available_hours: json("available_hours").$type<AvailableHours>(),
   rating: decimal("rating", { precision: 3, scale: 2 }),
   number_of_reviews: integer("number_of_reviews").default(0),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
