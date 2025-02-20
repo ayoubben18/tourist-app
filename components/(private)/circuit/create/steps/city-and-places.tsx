@@ -13,13 +13,20 @@ import { Label } from "@/components/ui/label";
 import { useRef, useState } from "react";
 import { FormProp } from "../lib";
 import { SelectableCard } from "../selectable-card";
-import { LoadScript, Autocomplete } from "@react-google-maps/api";
+import {
+  LoadScript,
+  Autocomplete,
+  GoogleMap,
+  Marker,
+} from "@react-google-maps/api";
 
 type Place = {
   id: string;
   name: string;
   description?: string;
   image: string;
+  latitude?: string;
+  longitude?: string;
 };
 
 type Props = {
@@ -32,6 +39,10 @@ const CityAndPlaces = ({ form }: Props) => {
   const [places, setPlaces] = useState<Place[]>([]);
   const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
   const autoCompleteRef = useRef<HTMLInputElement>(null);
+  const [selectedLocation, setSelectedLocation] = useState<{
+    lat: number;
+    lng: number;
+  } | null>(null);
 
   const onPlaceChanged = async () => {
     if (autocomplete) {
@@ -39,6 +50,10 @@ const CityAndPlaces = ({ form }: Props) => {
       if (place.place_id && place.geometry?.location) {
         form.setValue("city", place.place_id);
         setSearchQuery("");
+        setSelectedLocation({
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+        });
         // Fetch nearby places using the city's coordinates
         await fetchNearbyPlaces(place.geometry.location);
       }
@@ -67,6 +82,8 @@ const CityAndPlaces = ({ form }: Props) => {
             description: result.vicinity || "",
             image:
               result.photos?.[0]?.getUrl() || "https://i.sstatic.net/y9DpT.jpg",
+            latitude: result.geometry?.location?.lat().toString(),
+            longitude: result.geometry?.location?.lng().toString(),
           }));
           setPlaces(formattedPlaces);
         }
@@ -108,20 +125,46 @@ const CityAndPlaces = ({ form }: Props) => {
                 googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
                 libraries={["places"]}
               >
-                <Autocomplete
-                  onLoad={setAutocomplete}
-                  onPlaceChanged={onPlaceChanged}
-                  options={{
-                    types: ["(cities)"],
-                  }}
-                >
-                  <Input
-                    ref={autoCompleteRef}
-                    type="text"
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    placeholder="Search for a city..."
-                  />
-                </Autocomplete>
+                <div className="space-y-4">
+                  <Autocomplete
+                    onLoad={setAutocomplete}
+                    onPlaceChanged={onPlaceChanged}
+                    options={{
+                      types: ["(cities)"],
+                    }}
+                  >
+                    <Input
+                      ref={autoCompleteRef}
+                      type="text"
+                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      placeholder="Search for a city..."
+                    />
+                  </Autocomplete>
+
+                  <div className="h-[300px] w-full rounded-md">
+                    <GoogleMap
+                      zoom={12}
+                      center={
+                        selectedLocation || { lat: 51.5074, lng: -0.1278 }
+                      }
+                      mapContainerClassName="w-full h-full rounded-md"
+                    >
+                      {selectedLocation && (
+                        <Marker position={selectedLocation} />
+                      )}
+                      {places.map((place) => (
+                        <Marker
+                          key={place.id}
+                          position={{
+                            lat: parseFloat(place.latitude || "0"),
+                            lng: parseFloat(place.longitude || "0"),
+                          }}
+                          onClick={() => handlePlaceSelection(place.id)}
+                        />
+                      ))}
+                    </GoogleMap>
+                  </div>
+                </div>
               </LoadScript>
             </FormControl>
             <FormDescription>

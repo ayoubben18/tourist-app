@@ -1,7 +1,6 @@
 import { CardsGrid } from "@/components/(public)/public-circuits/cards-grid";
+import CreateCircuitButton from "@/components/(public)/public-circuits/create-circuit-button";
 import { getPublicCircuits } from "@/services/database/circuits";
-import { Plus } from "lucide-react";
-
 export default async function App() {
   const data = await getPublicCircuits({});
   return (
@@ -11,10 +10,7 @@ export default async function App() {
           <h1 className="text-2xl md:text-3xl font-bold">
             Discover public circuits
           </h1>
-          <button className="inline-flex items-center gap-2 bg-primary text-primary-foreground hover:bg-primary/90 px-4 py-2 rounded-lg font-medium">
-            <Plus className="w-5 h-5" />
-            Create Your Own
-          </button>
+          <CreateCircuitButton />
         </div>
         {/* <SearchAndFilters /> */}
         {/* <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">

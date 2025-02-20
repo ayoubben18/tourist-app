@@ -148,6 +148,55 @@
       "when": 1739878217130,
       "tag": "0020_neat_lizard",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1740082710901,
+      "tag": "0021_bitter_beyonder",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1740083436530,
+      "tag": "0022_modern_phantom_reporter",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1740085428226,
+      "tag": "0023_watery_pandemic",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1740085720998,
+      "tag": "0024_fearless_prism",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1740086527709,
+      "tag": "0025_slimy_jack_flag",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1740089386640,
+      "tag": "0026_closed_mulholland_black",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1740089896749,
+      "tag": "0027_unusual_clea",
+      "breakpoints": true
     }
   ]
 }

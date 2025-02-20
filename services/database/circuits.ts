@@ -73,7 +73,7 @@ const getPublicCircuits = publicAction.create(
         users_additional_info,
         eq(circuits.creator_id, users_additional_info.id)
       )
-      .innerJoin(cities, eq(cities.city_id, circuits.city_id))
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
       .where(whereClause);
 
     // Sorting
@@ -117,7 +117,7 @@ const getCircuit = publicAction.create(
         users_additional_info,
         eq(circuits.creator_id, users_additional_info.id)
       )
-      .innerJoin(cities, eq(cities.city_id, circuits.city_id))
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
       .where(
         and(eq(circuits.is_public, true), eq(circuits.id, Number(circuit_id)))
       )
@@ -143,6 +143,7 @@ const getPointsOfInterestOfCircuit = publicAction.create(
         opening_hours: points_of_interest.opening_hours,
         address: points_of_interest.address,
         sequence_order: circuit_points.sequence_order,
+        google_place_id: points_of_interest.google_place_id,
       })
       .from(circuit_points)
       .innerJoin(
@@ -185,7 +186,7 @@ const getCircuitWithPOI = publicAction.create(
           users_additional_info,
           eq(circuits.creator_id, users_additional_info.id)
         )
-        .innerJoin(cities, eq(cities.city_id, circuits.city_id))
+        .innerJoin(cities, eq(cities.id, circuits.city_id))
         .where(
           and(eq(circuits.is_public, true), eq(circuits.id, Number(circuit_id)))
         )
@@ -203,11 +204,12 @@ const getCircuitWithPOI = publicAction.create(
           opening_hours: points_of_interest.opening_hours,
           address: points_of_interest.address,
           sequence_order: circuit_points.sequence_order,
+          google_place_id: points_of_interest.google_place_id,
         })
         .from(circuit_points)
         .innerJoin(
           points_of_interest,
-          eq(circuit_points.id, points_of_interest.id)
+          eq(circuit_points.poi_id, points_of_interest.id)
         )
         .where(eq(circuit_points.circuit_id, Number(circuit_id)))
         .orderBy(circuit_points.sequence_order),
@@ -218,11 +220,15 @@ const getCircuitWithPOI = publicAction.create(
       return null;
     }
 
-    // Return combined result
-    return {
+    const toReturn = {
       ...circuit,
       pois,
     };
+
+    console.log("toReturn: ", toReturn);
+
+    // Return combined result
+    return toReturn;
   }
 );
 

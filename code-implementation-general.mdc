@@ -1,0 +1,48 @@
+---
+description: General Code Implementation Best Practices (Language-Agnostic)
+globs: *.py, *.ts, *.js, *.tsx, *.jsx 
+---
+# General Code Implementation Best Practices (Language-Agnostic)
+
+This rule set defines general, language-agnostic best practices for code implementation, applicable to all programming languages.
+
+<rule>
+name: code_best_practices_general
+description: "Defines general, language-agnostic code implementation best practices."
+purpose: "Promote clean, maintainable, robust, high-quality code across all projects."
+when_to_apply: "During code implementation for all tasks, regardless of language."
+outcome: "Generate code adhering to general best practices: clarity, maintainability, error handling, no duplication."
+actions:
+  - type: instruct
+    message: |
+      **General Code Implementation Best Practices:**
+      - **Write Clean and Maintainable Code:** Easy to understand, modify, extend.
+        - Descriptive names.
+        - Small, focused functions/modules.
+        - Consistent style/conventions.
+      - **Prioritize Error Handling and Edge Cases:** Robust error handling for stability.
+        - Handle errors/edge cases at function start.
+        - Early returns for errors (avoid nesting).
+        - Place Happy path last.
+        - Avoid unnecessary `else`.
+        - Guard clauses for preconditions.
+        - Proper error logging/user messages.
+        - Custom error types/factories.
+        - Avoid silent errors/empty catch/generic messages.
+      - **Employ Early Returns and Clear Patterns:** Improve readability, reduce nesting.
+      - **Prefer Iteration & Modularization:** Avoid code duplication, promote reuse.
+      - **Provide Clear Explanations:** Document code effectively.
+        - Concise explanations for standard logic.
+        - Detailed explanations for complex logic.
+        - Update comments when modifying code.
+      - **Avoid Removing Comments (Unless Requested):** Preserve context, history.
+
+      **Final Reminders (General Code Implementation):**
+      - **Reflection Before Action**
+      - **No Core Functionality Loss**
+      - **Efficiency & Iteration**
+      - **Accessibility as Core Principle**
+metadata:
+  priority: medium
+  version: 1.0
+</rule>

@@ -1,0 +1,2 @@
+-- ALTER TABLE "bookings" ALTER COLUMN "start_time" SET DATA TYPE timestamp;--> statement-breakpoint
+-- ALTER TABLE "bookings" DROP COLUMN "booking_date";

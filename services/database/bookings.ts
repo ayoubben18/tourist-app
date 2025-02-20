@@ -1,15 +1,14 @@
 "use server";
 
-import { z } from "zod";
-import { authenticatedAction } from "../server-only";
 import { db } from "@/db";
-import { GuideBookingsDTO } from "@/dto/bookings-dto";
 import {
   bookings,
   circuits,
   users_additional_info,
 } from "@/db/migrations/schema";
+import { GuideBookingsDTO } from "@/dto/bookings-dto";
 import { and, eq } from "drizzle-orm";
+import { authenticatedAction } from "../server-only";
 
 const getPendingBookings = authenticatedAction.create(
   async (context): Promise<GuideBookingsDTO[]> => {
@@ -22,7 +21,6 @@ const getPendingBookings = authenticatedAction.create(
         created_at: bookings.created_at,
         tourist_id: bookings.tourist_id,
         booking_date: bookings.booking_date,
-        start_time: bookings.start_time,
         total_price: bookings.total_price,
         creator_avatar: users_additional_info.avatar_url,
         creator: users_additional_info.full_name,
@@ -46,7 +44,6 @@ const getPendingBookings = authenticatedAction.create(
   }
 );
 
-
 const getConfirmedBookings = authenticatedAction.create(
   async (context): Promise<GuideBookingsDTO[]> => {
     const pendingBookings = await db
@@ -58,7 +55,6 @@ const getConfirmedBookings = authenticatedAction.create(
         created_at: bookings.created_at,
         tourist_id: bookings.tourist_id,
         booking_date: bookings.booking_date,
-        start_time: bookings.start_time,
         total_price: bookings.total_price,
         creator_avatar: users_additional_info.avatar_url,
         creator: users_additional_info.full_name,
@@ -82,5 +78,4 @@ const getConfirmedBookings = authenticatedAction.create(
   }
 );
 
-
-export { getPendingBookings, getConfirmedBookings}
+export { getConfirmedBookings, getPendingBookings };

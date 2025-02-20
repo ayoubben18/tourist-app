@@ -1,0 +1,2 @@
+ALTER TABLE "points_of_interest" ADD COLUMN "google_place_id" text;--> statement-breakpoint
+ALTER TABLE "points_of_interest" ADD CONSTRAINT "points_of_interest_google_place_id_unique" UNIQUE("google_place_id");

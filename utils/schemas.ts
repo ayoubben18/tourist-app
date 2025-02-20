@@ -49,9 +49,11 @@ export const createCircuitSchema = z.object({
   startTime: z.date(),
   guideId: z.string().uuid().optional(),
   isPublic: z.boolean(),
+  name: z.string(),
+  description: z.string(),
 });
 
 export const createReview = z.object({
-  comment: z.string().min(1, 'Please enter a comment'),
-  rating: z.number().min(1, 'Please select a rating between 1 and 5').max(5),
+  comment: z.string().min(1, "Please enter a comment"),
+  rating: z.number().min(1, "Please select a rating between 1 and 5").max(5),
 });
