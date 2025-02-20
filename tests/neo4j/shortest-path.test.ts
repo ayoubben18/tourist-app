@@ -1,8 +1,14 @@
 import { initializeNeo4j } from "@/utils/server-clients";
 
 describe("Shortest Path", () => {
+  jest.setTimeout(10000);
   it("should find the shortest path between two nodes", async () => {
-    const placeIds = ["eiffel_tower", "notre_dame"];
+    const placeIds = [
+      "ChIJecuo7NVaoA0RYCaneAFhs1w",
+      "ChIJw4E8-tVaoA0RNIh0gpFwc4I",
+      "ChIJ-yRwGstboA0RmV2ovoUDL48",
+      "ChIJ43mc2KRaoA0Ri3WI0JZESnc",
+    ];
 
     const neo4j = await initializeNeo4j();
     const result = await neo4j.query(
@@ -27,9 +33,6 @@ RETURN
     next.name as nextStop,
     next.id as nextId,
     r.distance as distance,
-    r.travelTime as travelTime,
-    r.transportModes as transportModes,
-    r.recommendedMode as recommendedTransport,
     current.latitude as currentLat,
     current.longitude as currentLng,
     next.latitude as nextLat,

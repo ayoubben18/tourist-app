@@ -729,7 +729,8 @@ export const users_additional_info = pgTable(
 );
 
 export const cities = pgTable("cities", {
-  city_id: serial("city_id").primaryKey(),
+  id: serial("id").primaryKey(),
+  google_place_id: text("google_place_id").unique(),
   name: text("name").notNull(),
   country: text("country").notNull(),
   description: text("description"),
@@ -739,7 +740,10 @@ export const cities = pgTable("cities", {
 
 export const points_of_interest = pgTable("points_of_interest", {
   id: serial("id").primaryKey(),
-  city_id: integer("city_id").references(() => cities.city_id),
+  google_place_id: text("google_place_id").unique(),
+  city_id: integer("city_id").references(() => cities.id, {
+    onDelete: "cascade",
+  }),
   name: text("name").notNull(),
   description: text("description"),
   category: text("category"),
@@ -751,8 +755,12 @@ export const points_of_interest = pgTable("points_of_interest", {
 
 export const circuits = pgTable("circuits", {
   id: serial("id").primaryKey(),
-  creator_id: uuid("creator_id").references(() => usersInAuth.id),
-  city_id: integer("city_id").references(() => cities.city_id),
+  creator_id: uuid("creator_id").references(() => usersInAuth.id, {
+    onDelete: "cascade",
+  }),
+  city_id: integer("city_id").references(() => cities.id, {
+    onDelete: "cascade",
+  }),
   name: text("name").notNull(),
   description: text("description"),
   estimated_duration: integer("estimated_duration"), // in minutes
@@ -760,13 +768,15 @@ export const circuits = pgTable("circuits", {
   created_at: timestamp("created_at").defaultNow(),
   is_public: boolean("is_public").default(true),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
-  number_of_reviews: integer("number_of_reviews").default(0)
+  number_of_reviews: integer("number_of_reviews").default(0),
 });
 
 export const circuit_points = pgTable("circuit_points", {
   id: serial("id").primaryKey().notNull(),
   circuit_id: integer("circuit_id")
-    .references(() => circuits.id)
+    .references(() => circuits.id, {
+      onDelete: "cascade",
+    })
     .notNull(),
 
   poi_id: integer("poi_id")
@@ -794,11 +804,15 @@ type AvailableHours = Record<DaysOfWeek, string[]>;
 
 export const guide_profiles = pgTable("guide_profiles", {
   id: uuid("id")
-    .references(() => users_additional_info.id)
+    .references(() => users_additional_info.id, {
+      onDelete: "cascade",
+    })
     .primaryKey(),
   verification_status: guide_status("verification_status"),
   authorization_document: uuid("authorization_document")
-    .references(() => objectsInStorage.id)
+    .references(() => objectsInStorage.id, {
+      onDelete: "set null",
+    })
     .notNull(),
   years_of_experience: integer("years_of_experience"),
   available_hours: json("available_hours").$type<AvailableHours>(),
@@ -806,6 +820,7 @@ export const guide_profiles = pgTable("guide_profiles", {
   number_of_reviews: integer("number_of_reviews").default(0),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
   verified_at: timestamp("verified_at", { mode: "string" }),
+  cities: text("cities").array(),
 });
 
 export const booking_status = pgEnum("booking_status", [
@@ -817,12 +832,19 @@ export const booking_status = pgEnum("booking_status", [
 
 export const bookings = pgTable("bookings", {
   booking_id: serial("booking_id").primaryKey(),
-  circuit_id: integer("circuit_id").references(() => circuits.id),
-  tourist_id: uuid("tourist_id").references(() => usersInAuth.id),
-  guide_id: uuid("guide_id").references(() => guide_profiles.id),
-  booking_date: date("booking_date").notNull(),
-  start_time: time("start_time").notNull(),
-
+  circuit_id: integer("circuit_id").references(() => circuits.id, {
+    onDelete: "cascade",
+  }),
+  tourist_id: uuid("tourist_id").references(() => usersInAuth.id, {
+    onDelete: "cascade",
+  }),
+  guide_id: uuid("guide_id").references(() => guide_profiles.id, {
+    onDelete: "set null",
+  }),
+  booking_date: timestamp("booking_date", {
+    mode: "string",
+    withTimezone: true,
+  }),
   status: booking_status("status"),
   created_at: timestamp("created_at").defaultNow(),
   total_price: decimal("total_price", { precision: 10, scale: 2 }),
@@ -830,8 +852,12 @@ export const bookings = pgTable("bookings", {
 
 export const circuit_comments = pgTable("circuit_comments", {
   id: serial("id").primaryKey(),
-  circuit_id: integer("circuit_id").references(() => circuits.id),
-  user_id: uuid("user_id").references(() => usersInAuth.id),
+  circuit_id: integer("circuit_id").references(() => circuits.id, {
+    onDelete: "cascade",
+  }),
+  user_id: uuid("user_id").references(() => usersInAuth.id, {
+    onDelete: "cascade",
+  }),
   comment: text("comment").notNull(),
   rating: integer("rating"),
   created_at: timestamp("created_at").defaultNow(),
@@ -839,22 +865,34 @@ export const circuit_comments = pgTable("circuit_comments", {
 
 export const likes = pgTable("likes", {
   id: serial("id").primaryKey(),
-  circuit_id: integer("circuit_id").references(() => circuits.id),
-  user_id: uuid("user_id").references(() => usersInAuth.id),
+  circuit_id: integer("circuit_id").references(() => circuits.id, {
+    onDelete: "cascade",
+  }),
+  user_id: uuid("user_id").references(() => usersInAuth.id, {
+    onDelete: "cascade",
+  }),
   created_at: timestamp("created_at").defaultNow(),
 });
 
 export const favorites = pgTable("favorites", {
   id: serial("id").primaryKey(),
-  circuit_id: integer("circuit_id").references(() => circuits.id),
-  user_id: uuid("user_id").references(() => usersInAuth.id),
+  circuit_id: integer("circuit_id").references(() => circuits.id, {
+    onDelete: "cascade",
+  }),
+  user_id: uuid("user_id").references(() => usersInAuth.id, {
+    onDelete: "cascade",
+  }),
   created_at: timestamp("created_at").defaultNow(),
 });
 
 export const guides_comments = pgTable("guides_comments", {
   id: serial("id").primaryKey(),
-  guide_id: uuid("guide_id").references(() => guide_profiles.id),
-  user_id: uuid("user_id").references(() => usersInAuth.id),
+  guide_id: uuid("guide_id").references(() => guide_profiles.id, {
+    onDelete: "cascade",
+  }),
+  user_id: uuid("user_id").references(() => usersInAuth.id, {
+    onDelete: "cascade",
+  }),
   comment: text("comment"),
   rating: integer("rating"),
   created_at: timestamp("created_at").defaultNow(),

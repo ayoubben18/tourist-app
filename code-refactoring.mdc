@@ -1,0 +1,8 @@
+---
+description: When refactoring code
+globs: *.py, *.ts, *.js, *.tsx, *.jsx 
+---
+When a function becomes too long, split it into smaller functions.
+Refactor one file at a time, respecting dependency order.
+Preserve existing comments unless explicitly instructed otherwise or the related code is removed. You are free to existing comments if necessary.
+Following Coding Best Practices [coding-best-practices.mdc](mdc:.stuff/rules/coding-best-practices.mdc)

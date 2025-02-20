@@ -1,0 +1,36 @@
+---
+description: Test-Driven Development and Unit Testing Rules
+globs: *.py, *.ts, *.js, *.tsx, *.jsx 
+---
+# Test-Driven Development and Unit Testing Rules
+
+This rule set defines and enforces Test-Driven Development (TDD) and unit testing principles. **Prioritizes purposeful, meaningful unit tests for logic and behavior.** 
+
+<rule>
+name: tdd_unit_testing
+description: "Enforces TDD and unit testing"
+purpose: "Improve code quality, logic, prevent regressions: TDD & unit tests are crucial."
+when_to_apply: "During code implementation, especially logic-based components."
+outcome: "Employ TDD; write purposeful, concise, readable unit tests focused on logic/behavior."
+actions:
+  - type: instruct
+    message: |
+      **Testing - Test-Driven Development (TDD) - Crucial for Code Quality:**
+      - **Employ TDD:** Use TDD for tasks with testable logic (simple & complex). Write tests *before or alongside* code. Minimal testing for non-logic tasks.
+      - **Purposeful, Meaningful Tests:** Validate logic/behavior. Prevent future issues. Avoid trivial tests.
+      - **Unit Tests Focus:** Test individual units (functions, methods, classes) in isolation. No integration tests unless requested.
+      - **Test Logic, Not Implementation:** Test *what* code does, not *how*.
+      - **Concise, Readable, Maintainable Tests:** Keep tests short, clear, simple.
+      - **Descriptive Names & Assertions:** Use meaningful names, clear assertions.
+      - **Test Omission Allowed:** Skip tests for non-testable code.
+
+      **Example (Unit Test Focus):** Test discount logic, not API status.
+
+      **Final Reminders (Testing & Validation):**
+      - **No Core Functionality Loss:** Proactive regression testing (unit tests prioritized).
+      - **Human Validation:** Indicate when human validation needed.
+      - **TDD is High Priority:** Unit tests are crucial for code quality and reliability.
+metadata:
+  priority: high
+  version: 2.0
+</rule>

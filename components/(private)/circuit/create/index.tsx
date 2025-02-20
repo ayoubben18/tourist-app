@@ -21,7 +21,8 @@ import Starting from "./steps/starting";
 import { createCircuit } from "@/services/neo4jGraph/circuits";
 import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
-
+import { useRouter } from "next/navigation";
+import { ROUTES } from "@/routes";
 type StepType = {
   id: number;
   title: string;
@@ -30,6 +31,7 @@ type StepType = {
 };
 
 const CreateCircuitStepper = () => {
+  const router = useRouter();
   const { form, step, handleBack, handleNext } = useCircuitForm();
 
   const steps: StepType[] = [
@@ -63,16 +65,26 @@ const CreateCircuitStepper = () => {
 
   const { mutateAsync: createCircuitMutation } = useMutation({
     mutationFn: createCircuit,
+    onSuccess: (data) => {
+      router.push(ROUTES.public.publicCircuits + "/" + data);
+    },
   });
 
-  const onSubmit = () => {
-    console.log(form.getValues());
-    toast.promise(createCircuitMutation(form.getValues()), {
+  const onSubmit = async () => {
+    const values = form.getValues();
+    if (!form.formState.isValid) {
+      toast.error("Please fill all required fields");
+      return;
+    }
+
+    await toast.promise(createCircuitMutation(values), {
       loading: "Creating circuit...",
       success: "Circuit created successfully",
       error: "Failed to create circuit",
     });
   };
+
+  console.log(form.getValues());
 
   if (step > steps.length) return <div>Step does not exist</div>;
 
@@ -87,6 +99,16 @@ const CreateCircuitStepper = () => {
             </CardHeader>
             <CardContent>{currentStep.component}</CardContent>
           </Card>
+          {!form.formState.isValid && (
+            <div className="text-red-500 text-sm">
+              Please fill all required fields
+              {Object.values(form.formState.errors).map((value, index) => (
+                <div key={index} className="text-red-500 text-sm">
+                  {index + 1}. {value?.message}
+                </div>
+              ))}
+            </div>
+          )}
           <div className=" flex items-center justify-between">
             <Button
               type="button"
@@ -98,10 +120,9 @@ const CreateCircuitStepper = () => {
               Back
             </Button>
             <Button
-              type={step === steps.length ? "submit" : "button"}
-              onClick={handleNext}
-              disabled={
-                step === 1 ? !form.getValues("city") : !form.formState.isValid
+              type="button"
+              onClick={
+                step === steps.length ? form.handleSubmit(onSubmit) : handleNext
               }
               className="gap-2"
             >

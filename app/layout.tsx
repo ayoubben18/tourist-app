@@ -35,7 +35,13 @@ export default function RootLayout({
           <body
             className={`${geistSans.variable} ${geistMono.variable} container mx-auto `}
           >
-            <Toaster />
+            <Toaster
+              richColors
+              position="top-right"
+              duration={2000}
+              theme="light"
+              visibleToasts={1}
+            />
             <Navbar />
             {children}
             <Footer />

@@ -17,7 +17,46 @@ type Props = {
 
 const SelectVisibility = ({ form }: Props) => {
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <FormField
+        control={form.control}
+        name="name"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Circuit Name</FormLabel>
+            <FormControl>
+              <input
+                {...field}
+                className="w-full px-3 py-2 border rounded-md"
+                placeholder="Enter circuit name"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
+      <FormField
+        control={form.control}
+        name="description"
+        render={({ field }) => (
+          <FormItem>
+            <FormLabel>Description</FormLabel>
+            <FormControl>
+              <textarea
+                {...field}
+                className="w-full px-3 py-2 border rounded-md min-h-[100px]"
+                placeholder="Describe your circuit"
+              />
+            </FormControl>
+            <FormDescription>
+              Tell others what this circuit is about
+            </FormDescription>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+
       <FormField
         control={form.control}
         name="isPublic"
@@ -47,6 +86,7 @@ const SelectVisibility = ({ form }: Props) => {
           </FormItem>
         )}
       />
+
       {/* Add other review content here */}
     </div>
   );
