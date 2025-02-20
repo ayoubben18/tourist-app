@@ -141,6 +141,13 @@
       "when": 1739829321653,
       "tag": "0019_mixed_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1739878217130,
+      "tag": "0020_neat_lizard",
+      "breakpoints": true
     }
   ]
 }

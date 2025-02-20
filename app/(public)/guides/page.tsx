@@ -1,4 +1,4 @@
-import { GuidesCardsGrid } from "@/components/(public)/guides/GuidesCardsGrid";
+import { GuidesCardsGrid } from "@/components/(public)/guides/guides-cards-grid";
 import { getGuides } from "@/services/database/guide";
 
 export default async function App() {

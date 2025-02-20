@@ -756,11 +756,11 @@ export const circuits = pgTable("circuits", {
   name: text("name").notNull(),
   description: text("description"),
   estimated_duration: integer("estimated_duration"), // in minutes
-
   distance: decimal("distance", { precision: 10, scale: 2 }), // in kilometers
   created_at: timestamp("created_at").defaultNow(),
   is_public: boolean("is_public").default(true),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
+  number_of_reviews: integer("number_of_reviews").default(0)
 });
 
 export const circuit_points = pgTable("circuit_points", {
@@ -801,7 +801,7 @@ export const guide_profiles = pgTable("guide_profiles", {
     .references(() => objectsInStorage.id)
     .notNull(),
   years_of_experience: integer("years_of_experience"),
-  available_hours: json("available_hours").$type<AvailableHours>(), // JSON mapping days to time slots
+  available_hours: json("available_hours").$type<AvailableHours>(),
   rating: decimal("rating", { precision: 3, scale: 2 }),
   number_of_reviews: integer("number_of_reviews").default(0),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),

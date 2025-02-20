@@ -3,7 +3,11 @@
 import { z } from "zod";
 import { authenticatedAction, publicAction } from "../server-only";
 import { db } from "@/db";
-import { guide_profiles, guides_comments, users_additional_info } from "../../db/migrations/schema";
+import {
+  guide_profiles,
+  guides_comments,
+  users_additional_info,
+} from "../../db/migrations/schema";
 import { and, eq, sql } from "drizzle-orm";
 import { GuideCommentsDTO } from "@/dto/guide-comments-dto";
 
@@ -41,29 +45,11 @@ const addComment = authenticatedAction.create(
     rating: z.number().min(1).max(5),
   }),
   async ({ guide_id, comment, rating }, context) => {
-    await db.transaction(async (tx) => {
-      // Insert the new comment
-      await tx.insert(guides_comments).values({
-        guide_id,
-        user_id: context.userId,
-        comment,
-        rating
-      });
-
-      // Update guide statistics
-      await tx
-        .update(guide_profiles)
-        .set({
-          number_of_reviews: sql`${guide_profiles.number_of_reviews} + 1`,
-          rating: sql`
-            (
-              SELECT ROUND(AVG(rating)::numeric, 2)
-              FROM ${guides_comments}
-              WHERE guide_id = ${guide_id}
-            )
-          `
-        })
-        .where(eq(guide_profiles.id, guide_id));
+    await db.insert(guides_comments).values({
+      guide_id,
+      user_id: context.userId,
+      comment,
+      rating,
     });
   }
 );
@@ -71,39 +57,16 @@ const addComment = authenticatedAction.create(
 const removeComment = authenticatedAction.create(
   z.object({
     comment_id: z.number().positive(),
-    guide_id: z.string()
   }),
-  async ({ comment_id, guide_id }, context) => {
-    await db.transaction(async (tx) => {
-      // Delete the comment
-      await tx
-        .delete(guides_comments)
-        .where(
-          and(
-            eq(guides_comments.id, comment_id),
-            eq(guides_comments.user_id, context.userId)
-          )
-        );
-
-      // Update guide statistics
-      await tx
-        .update(guide_profiles)
-        .set({
-          number_of_reviews: sql`${guide_profiles.number_of_reviews} - 1`,
-          rating: sql`
-            CASE 
-              WHEN (SELECT COUNT(*) FROM ${guides_comments} WHERE guide_id = ${guide_id}) = 0 
-              THEN NULL 
-              ELSE (
-                SELECT ROUND(AVG(rating)::numeric, 2)
-                FROM ${guides_comments}
-                WHERE guide_id = ${guide_id}
-              )
-            END
-          `
-        })
-        .where(eq(guide_profiles.id, guide_id));
-    });
+  async ({ comment_id }, context) => {
+    await db
+      .delete(guides_comments)
+      .where(
+        and(
+          eq(guides_comments.id, comment_id),
+          eq(guides_comments.user_id, context.userId)
+        )
+      );
   }
 );
 
