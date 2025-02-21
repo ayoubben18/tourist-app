@@ -16,7 +16,7 @@ import FileInput from "../(public)/onboarding/file-input";
 
 interface FormStore {
   currentStep: number;
-  selections: Record<number | string, Record<string, string | File>>;
+  selections: Record<number | string, Record<string, any>>;
   setStep: (step: number) => void;
   setSelection: (
     step: number,
@@ -60,17 +60,24 @@ export type FormStep = {
 export type FormField = {
   id: string;
   label: string;
-  type: "text" | "email" | "number" | "tel" | "file" | "password";
+  type: "text" | "email" | "number" | "tel" | "file" | "password" | "custom";
   placeholder?: string;
   required?: boolean;
   accept?: string;
+  component?: React.ComponentType<CustomComponentProps>;
+};
+
+type CustomComponentProps = {
+  value: any;
+  onChange: (value: any) => void;
+  [key: string]: any;
 };
 
 export interface MultiStepFormProps {
   title?: React.ReactNode;
   formSteps: FormStep[];
   onComplete: (
-    selections: Record<number | string, Record<string, string | File>>
+    selections: Record<number | string, Record<string, string | string[] | File>>
   ) => boolean;
   children?: React.ReactNode;
   finalStep?: React.ReactNode;
@@ -191,6 +198,7 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
 
     const handleNextStep = () => {
       const currentStepFields = formSteps[currentStep].fields;
+      console.log("Current fields", selections)
       const newErrors: Record<string, string> = {};
 
       currentStepFields.forEach((field) => {
@@ -335,6 +343,23 @@ const MultiStepForm = React.forwardRef<HTMLDivElement, MultiStepFormProps>(
                             required={field.required}
                             error={formErrors[field.id]}
                           />
+                        ) : field.type === "custom" && field.component ? (
+                          <div>
+                            <Label htmlFor={field.id}>{field.label}</Label>
+                            {React.createElement(field.component, {
+                              id: field.id,
+                              onChange: (value: any) =>
+                                handleInputChange(field.id, value),
+                              value: localValues[field.id],
+                              required: field.required,
+                              error: formErrors[field.id],
+                            })}
+                            {formErrors[field.id] && (
+                              <p className="text-red-500 text-sm">
+                                {formErrors[field.id]}
+                              </p>
+                            )}
+                          </div>
                         ) : (
                           <>
                             <Label htmlFor={field.id}>{field.label}</Label>

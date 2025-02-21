@@ -23,7 +23,10 @@ const getGuides = publicAction.create(
     const whereClause = and(
       eq(guide_profiles.verification_status, "approved"),
       searchTerm
-        ? ilike(users_additional_info.full_name, "%" + searchTerm + "%")
+        ? or(
+            ilike(users_additional_info.full_name, "%" + searchTerm + "%"),
+            ilike(guide_profiles.country, "%" + searchTerm + "%")
+          )
         : undefined,
       yearsOfExperience
         ? yearsOfExperience == 4
@@ -47,6 +50,7 @@ const getGuides = publicAction.create(
         full_name: users_additional_info.full_name,
         avatar_url: users_additional_info.avatar_url,
         years_of_experience: guide_profiles.years_of_experience,
+        country: guide_profiles.country,
         rating: guide_profiles.rating,
         number_of_reviews: guide_profiles.number_of_reviews,
         price_per_hour: guide_profiles.price_per_hour,
@@ -77,6 +81,7 @@ const getGuide = publicAction.create(
         full_name: users_additional_info.full_name,
         avatar_url: users_additional_info.avatar_url,
         years_of_experience: guide_profiles.years_of_experience,
+        country: guide_profiles.country,
         rating: guide_profiles.rating,
         number_of_reviews: guide_profiles.number_of_reviews,
         price_per_hour: guide_profiles.price_per_hour,
