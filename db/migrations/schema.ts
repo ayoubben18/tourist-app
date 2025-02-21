@@ -820,6 +820,7 @@ export const guide_profiles = pgTable("guide_profiles", {
   number_of_reviews: integer("number_of_reviews").default(0),
   price_per_hour: decimal("price_per_hour", { precision: 10, scale: 2 }),
   verified_at: timestamp("verified_at", { mode: "string" }),
+  country: text("country"),
   cities: text("cities").array(),
 });
 
