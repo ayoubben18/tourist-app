@@ -1,6 +1,6 @@
 {
-  "id": "83f349c2-3037-442a-bff3-23214e737cee",
-  "prevId": "744a1d88-e414-45db-80f0-7ee2dd6b476c",
+  "id": "b0d11e57-7866-4605-bb5e-e87e341b73fd",
+  "prevId": "83f349c2-3037-442a-bff3-23214e737cee",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -99,6 +99,12 @@
           "primaryKey": false,
           "notNull": false
         },
+        "estimated_duration": {
+          "name": "estimated_duration",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
         "status": {
           "name": "status",
           "type": "booking_status",
@@ -118,6 +124,12 @@
           "type": "numeric(10, 2)",
           "primaryKey": false,
           "notNull": false
+        },
+        "test": {
+          "name": "test",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         }
       },
       "indexes": {},
@@ -126,8 +138,12 @@
           "name": "bookings_circuit_id_circuits_id_fk",
           "tableFrom": "bookings",
           "tableTo": "circuits",
-          "columnsFrom": ["circuit_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "circuit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -136,8 +152,12 @@
           "tableFrom": "bookings",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["tourist_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "tourist_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -145,8 +165,12 @@
           "name": "bookings_guide_id_guide_profiles_id_fk",
           "tableFrom": "bookings",
           "tableTo": "guide_profiles",
-          "columnsFrom": ["guide_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "guide_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -299,8 +323,12 @@
           "name": "circuit_comments_circuit_id_circuits_id_fk",
           "tableFrom": "circuit_comments",
           "tableTo": "circuits",
-          "columnsFrom": ["circuit_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "circuit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -309,8 +337,12 @@
           "tableFrom": "circuit_comments",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -356,8 +388,12 @@
           "name": "circuit_points_circuit_id_circuits_id_fk",
           "tableFrom": "circuit_points",
           "tableTo": "circuits",
-          "columnsFrom": ["circuit_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "circuit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -365,8 +401,12 @@
           "name": "circuit_points_poi_id_points_of_interest_id_fk",
           "tableFrom": "circuit_points",
           "tableTo": "points_of_interest",
-          "columnsFrom": ["poi_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "poi_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -459,8 +499,12 @@
           "tableFrom": "circuits",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["creator_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "creator_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -468,8 +512,12 @@
           "name": "circuits_city_id_cities_id_fk",
           "tableFrom": "circuits",
           "tableTo": "cities",
-          "columnsFrom": ["city_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "city_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -534,7 +582,9 @@
         "cities_google_place_id_unique": {
           "name": "cities_google_place_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["google_place_id"]
+          "columns": [
+            "google_place_id"
+          ]
         }
       },
       "policies": {},
@@ -577,8 +627,12 @@
           "name": "favorites_circuit_id_circuits_id_fk",
           "tableFrom": "favorites",
           "tableTo": "circuits",
-          "columnsFrom": ["circuit_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "circuit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -587,8 +641,12 @@
           "tableFrom": "favorites",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -820,8 +878,12 @@
           "name": "guide_profiles_id_users_additional_info_id_fk",
           "tableFrom": "guide_profiles",
           "tableTo": "users_additional_info",
-          "columnsFrom": ["id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -830,8 +892,12 @@
           "tableFrom": "guide_profiles",
           "tableTo": "objects",
           "schemaTo": "storage",
-          "columnsFrom": ["authorization_document"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "authorization_document"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -890,8 +956,12 @@
           "name": "guides_comments_guide_id_guide_profiles_id_fk",
           "tableFrom": "guides_comments",
           "tableTo": "guide_profiles",
-          "columnsFrom": ["guide_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "guide_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -900,8 +970,12 @@
           "tableFrom": "guides_comments",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1016,8 +1090,12 @@
           "tableFrom": "identities",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1027,7 +1105,10 @@
         "identities_provider_id_provider_unique": {
           "name": "identities_provider_id_provider_unique",
           "nullsNotDistinct": false,
-          "columns": ["provider_id", "provider"]
+          "columns": [
+            "provider_id",
+            "provider"
+          ]
         }
       },
       "policies": {},
@@ -1113,8 +1194,12 @@
           "name": "likes_circuit_id_circuits_id_fk",
           "tableFrom": "likes",
           "tableTo": "circuits",
-          "columnsFrom": ["circuit_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "circuit_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1123,8 +1208,12 @@
           "tableFrom": "likes",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1177,8 +1266,12 @@
           "tableFrom": "mfa_amr_claims",
           "tableTo": "sessions",
           "schemaTo": "auth",
-          "columnsFrom": ["session_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1188,7 +1281,10 @@
         "mfa_amr_claims_session_id_authentication_method_pkey": {
           "name": "mfa_amr_claims_session_id_authentication_method_pkey",
           "nullsNotDistinct": false,
-          "columns": ["session_id", "authentication_method"]
+          "columns": [
+            "session_id",
+            "authentication_method"
+          ]
         }
       },
       "policies": {},
@@ -1266,8 +1362,12 @@
           "tableFrom": "mfa_challenges",
           "tableTo": "mfa_factors",
           "schemaTo": "auth",
-          "columnsFrom": ["factor_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "factor_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1451,8 +1551,12 @@
           "tableFrom": "mfa_factors",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1462,7 +1566,9 @@
         "mfa_factors_last_challenged_at_key": {
           "name": "mfa_factors_last_challenged_at_key",
           "nullsNotDistinct": false,
-          "columns": ["last_challenged_at"]
+          "columns": [
+            "last_challenged_at"
+          ]
         }
       },
       "policies": {},
@@ -1506,7 +1612,9 @@
         "migrations_name_key": {
           "name": "migrations_name_key",
           "nullsNotDistinct": false,
-          "columns": ["name"]
+          "columns": [
+            "name"
+          ]
         }
       },
       "policies": {},
@@ -1668,8 +1776,12 @@
           "tableFrom": "objects",
           "tableTo": "buckets",
           "schemaTo": "storage",
-          "columnsFrom": ["bucket_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "bucket_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1793,8 +1905,12 @@
           "tableFrom": "one_time_tokens",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1881,8 +1997,12 @@
           "name": "points_of_interest_city_id_cities_id_fk",
           "tableFrom": "points_of_interest",
           "tableTo": "cities",
-          "columnsFrom": ["city_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "city_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1892,7 +2012,9 @@
         "points_of_interest_google_place_id_unique": {
           "name": "points_of_interest_google_place_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["google_place_id"]
+          "columns": [
+            "google_place_id"
+          ]
         }
       },
       "policies": {},
@@ -2060,8 +2182,12 @@
           "tableFrom": "refresh_tokens",
           "tableTo": "sessions",
           "schemaTo": "auth",
-          "columnsFrom": ["session_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "session_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2071,7 +2197,9 @@
         "refresh_tokens_token_unique": {
           "name": "refresh_tokens_token_unique",
           "nullsNotDistinct": false,
-          "columns": ["token"]
+          "columns": [
+            "token"
+          ]
         }
       },
       "policies": {},
@@ -2177,8 +2305,12 @@
           "tableFrom": "s3_multipart_uploads",
           "tableTo": "buckets",
           "schemaTo": "storage",
-          "columnsFrom": ["bucket_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "bucket_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2264,8 +2396,12 @@
           "tableFrom": "s3_multipart_uploads_parts",
           "tableTo": "buckets",
           "schemaTo": "storage",
-          "columnsFrom": ["bucket_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "bucket_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2274,8 +2410,12 @@
           "tableFrom": "s3_multipart_uploads_parts",
           "tableTo": "s3_multipart_uploads",
           "schemaTo": "storage",
-          "columnsFrom": ["upload_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "upload_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2369,8 +2509,12 @@
           "tableFrom": "saml_providers",
           "tableTo": "sso_providers",
           "schemaTo": "auth",
-          "columnsFrom": ["sso_provider_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sso_provider_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2380,7 +2524,9 @@
         "saml_providers_entity_id_key": {
           "name": "saml_providers_entity_id_key",
           "nullsNotDistinct": false,
-          "columns": ["entity_id"]
+          "columns": [
+            "entity_id"
+          ]
         }
       },
       "policies": {},
@@ -2509,8 +2655,12 @@
           "tableFrom": "saml_relay_states",
           "tableTo": "flow_state",
           "schemaTo": "auth",
-          "columnsFrom": ["flow_state_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "flow_state_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -2519,8 +2669,12 @@
           "tableFrom": "saml_relay_states",
           "tableTo": "sso_providers",
           "schemaTo": "auth",
-          "columnsFrom": ["sso_provider_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sso_provider_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2690,8 +2844,12 @@
           "tableFrom": "sessions",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2776,8 +2934,12 @@
           "tableFrom": "sso_domains",
           "tableTo": "sso_providers",
           "schemaTo": "auth",
-          "columnsFrom": ["sso_provider_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "sso_provider_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3241,7 +3403,9 @@
         "users_phone_key": {
           "name": "users_phone_key",
           "nullsNotDistinct": false,
-          "columns": ["phone"]
+          "columns": [
+            "phone"
+          ]
         }
       },
       "policies": {},
@@ -3296,8 +3460,12 @@
           "tableFrom": "users_additional_info",
           "tableTo": "users",
           "schemaTo": "auth",
-          "columnsFrom": ["id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3307,7 +3475,9 @@
         "users_additional_info_id_unique": {
           "name": "users_additional_info_id_unique",
           "nullsNotDistinct": false,
-          "columns": ["id"]
+          "columns": [
+            "id"
+          ]
         }
       },
       "policies": {},
@@ -3319,32 +3489,55 @@
     "auth.aal_level": {
       "name": "aal_level",
       "schema": "auth",
-      "values": ["aal1", "aal2", "aal3"]
+      "values": [
+        "aal1",
+        "aal2",
+        "aal3"
+      ]
     },
     "public.booking_status": {
       "name": "booking_status",
       "schema": "public",
-      "values": ["pending", "confirmed", "completed", "cancelled"]
+      "values": [
+        "pending",
+        "confirmed",
+        "completed",
+        "cancelled"
+      ]
     },
     "auth.code_challenge_method": {
       "name": "code_challenge_method",
       "schema": "auth",
-      "values": ["s256", "plain"]
+      "values": [
+        "s256",
+        "plain"
+      ]
     },
     "auth.factor_status": {
       "name": "factor_status",
       "schema": "auth",
-      "values": ["unverified", "verified"]
+      "values": [
+        "unverified",
+        "verified"
+      ]
     },
     "auth.factor_type": {
       "name": "factor_type",
       "schema": "auth",
-      "values": ["totp", "webauthn", "phone"]
+      "values": [
+        "totp",
+        "webauthn",
+        "phone"
+      ]
     },
     "public.guide_status": {
       "name": "guide_status",
       "schema": "public",
-      "values": ["pending", "approved", "rejected"]
+      "values": [
+        "pending",
+        "approved",
+        "rejected"
+      ]
     },
     "auth.one_time_token_type": {
       "name": "one_time_token_type",
@@ -3361,7 +3554,11 @@
     "public.user_roles": {
       "name": "user_roles",
       "schema": "public",
-      "values": ["visitor", "guide", "admin"]
+      "values": [
+        "visitor",
+        "guide",
+        "admin"
+      ]
     }
   },
   "schemas": {

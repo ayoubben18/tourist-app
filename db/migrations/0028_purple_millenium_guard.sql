@@ -1,1 +1,0 @@
-ALTER TABLE "bookings" ADD COLUMN "estimated_duration" integer;

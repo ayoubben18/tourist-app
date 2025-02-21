@@ -850,6 +850,7 @@ export const bookings = pgTable("bookings", {
   status: booking_status("status"),
   created_at: timestamp("created_at").defaultNow(),
   total_price: decimal("total_price", { precision: 10, scale: 2 }),
+  test: text("test"),
 });
 
 export const circuit_comments = pgTable("circuit_comments", {
