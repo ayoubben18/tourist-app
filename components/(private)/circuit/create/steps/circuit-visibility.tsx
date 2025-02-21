@@ -10,7 +10,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { SelectableCard } from "../selectable-card";
-
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 type Props = {
   form: FormProp;
 };
@@ -25,7 +26,7 @@ const SelectVisibility = ({ form }: Props) => {
           <FormItem>
             <FormLabel>Circuit Name</FormLabel>
             <FormControl>
-              <input
+              <Input
                 {...field}
                 className="w-full px-3 py-2 border rounded-md"
                 placeholder="Enter circuit name"
@@ -43,7 +44,7 @@ const SelectVisibility = ({ form }: Props) => {
           <FormItem>
             <FormLabel>Description</FormLabel>
             <FormControl>
-              <textarea
+              <Textarea
                 {...field}
                 className="w-full px-3 py-2 border rounded-md min-h-[100px]"
                 placeholder="Describe your circuit"

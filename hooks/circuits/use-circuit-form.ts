@@ -1,10 +1,8 @@
 import { createCircuitSchema } from "@/utils/schemas";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { addDays } from "date-fns";
-import { useQueryState } from "nuqs";
-import { parseAsInteger } from "nuqs";
+import { parseAsInteger, useQueryState } from "nuqs";
 import { useEffect } from "react";
-import { useForm, UseFormReturn } from "react-hook-form";
+import { useForm } from "react-hook-form";
 import { z } from "zod";
 
 export const useCircuitForm = () => {
@@ -17,6 +15,8 @@ export const useCircuitForm = () => {
   const form = useForm<z.infer<typeof createCircuitSchema>>({
     resolver: zodResolver(createCircuitSchema),
     defaultValues: {
+      name: "",
+      description: "",
       city: undefined,
       guideId: undefined,
       isPublic: true,

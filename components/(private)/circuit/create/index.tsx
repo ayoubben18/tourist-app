@@ -23,12 +23,17 @@ import { useMutation } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/routes";
+import { LoadScript } from "@react-google-maps/api";
+import { createCircuitSchema } from "@/utils/schemas";
+import { z } from "zod";
 type StepType = {
   id: number;
   title: string;
   description: string;
   component: React.ReactNode;
 };
+
+const GOOGLE_MAPS_LIBRARIES: "places"[] = ["places"];
 
 const CreateCircuitStepper = () => {
   const router = useRouter();
@@ -38,7 +43,7 @@ const CreateCircuitStepper = () => {
     {
       id: 1,
       title: "Select City and Places you want to visit",
-      description: "Set the name and basic details of your circuit",
+      description: "Select the city and places you want to visit",
       component: <CityAndPlaces form={form} />,
     },
     {
@@ -70,21 +75,13 @@ const CreateCircuitStepper = () => {
     },
   });
 
-  const onSubmit = async () => {
-    const values = form.getValues();
-    if (!form.formState.isValid) {
-      toast.error("Please fill all required fields");
-      return;
-    }
-
-    await toast.promise(createCircuitMutation(values), {
+  const onSubmit = async (values: z.infer<typeof createCircuitSchema>) => {
+    toast.promise(createCircuitMutation(values), {
       loading: "Creating circuit...",
       success: "Circuit created successfully",
       error: "Failed to create circuit",
     });
   };
-
-  console.log(form.getValues());
 
   if (step > steps.length) return <div>Step does not exist</div>;
 
@@ -92,23 +89,18 @@ const CreateCircuitStepper = () => {
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
         <div className="flex flex-col space-y-4">
-          <Card className="border rounded-lg p-4">
-            <CardHeader>
-              <CardTitle>{currentStep.title}</CardTitle>
-              <CardDescription>{currentStep.description}</CardDescription>
-            </CardHeader>
-            <CardContent>{currentStep.component}</CardContent>
-          </Card>
-          {!form.formState.isValid && (
-            <div className="text-red-500 text-sm">
-              Please fill all required fields
-              {Object.values(form.formState.errors).map((value, index) => (
-                <div key={index} className="text-red-500 text-sm">
-                  {index + 1}. {value?.message}
-                </div>
-              ))}
-            </div>
-          )}
+          <LoadScript
+            googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
+            libraries={GOOGLE_MAPS_LIBRARIES}
+          >
+            <Card className="border rounded-lg p-4">
+              <CardHeader>
+                <CardTitle>{currentStep.title}</CardTitle>
+                <CardDescription>{currentStep.description}</CardDescription>
+              </CardHeader>
+              <CardContent>{currentStep.component}</CardContent>
+            </Card>
+          </LoadScript>
           <div className=" flex items-center justify-between">
             <Button
               type="button"

@@ -1,7 +1,5 @@
-import React, { useState } from "react";
-import { FormProp } from "../lib";
+import { Card, CardDescription, CardTitle } from "@/components/ui/card";
 import {
-  Form,
   FormControl,
   FormDescription,
   FormField,
@@ -11,13 +9,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { useGuides } from "@/hooks/use-guides";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { FormProp } from "../lib";
 import { SelectableCard } from "../selectable-card";
 
 type Props = {
@@ -25,7 +17,16 @@ type Props = {
 };
 
 const SelectGuide = ({ form }: Props) => {
-  const { data: guides, isLoading, setSearchTerm, searchTerm } = useGuides({});
+  const {
+    data: guides,
+    isLoading,
+    setSearchTerm,
+    searchTerm,
+  } = useGuides({
+    city: form.getValues("city"),
+    startTime: form.getValues("startTime"),
+    duration: 20,
+  });
   return (
     <div className="space-y-4">
       <FormField

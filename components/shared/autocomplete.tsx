@@ -20,6 +20,7 @@ type AutoCompleteProps = {
   emptyMessage: string;
   value?: Option;
   onValueChange?: (value: Option) => void;
+  onInputChange?: (value: string) => void;
   isLoading?: boolean;
   disabled?: boolean;
   placeholder?: string;
@@ -31,6 +32,7 @@ export const AutoComplete = ({
   emptyMessage,
   value,
   onValueChange,
+  onInputChange,
   disabled,
   isLoading = false,
 }: AutoCompleteProps) => {
@@ -91,13 +93,21 @@ export const AutoComplete = ({
     [onValueChange]
   );
 
+  const handleInputChange = useCallback(
+    (value: string) => {
+      setInputValue(value);
+      onInputChange?.(value);
+    },
+    [onInputChange]
+  );
+
   return (
     <CommandPrimitive onKeyDown={handleKeyDown}>
       <div>
         <CommandInput
           ref={inputRef}
           value={inputValue}
-          onValueChange={isLoading ? undefined : setInputValue}
+          onValueChange={isLoading ? undefined : handleInputChange}
           onBlur={handleBlur}
           onFocus={() => setOpen(true)}
           placeholder={placeholder}
