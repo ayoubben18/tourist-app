@@ -19,6 +19,9 @@ import {
   GoogleMap,
   Marker,
 } from "@react-google-maps/api";
+import { useQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useCircuitCreationStore } from "@/stores/create-circuit-store";
 
 type Place = {
   id: string;
@@ -36,13 +39,14 @@ type Props = {
 const CityAndPlaces = ({ form }: Props) => {
   const [autocomplete, setAutocomplete] =
     useState<google.maps.places.Autocomplete | null>(null);
-  const [places, setPlaces] = useState<Place[]>([]);
-  const [isLoadingPlaces, setIsLoadingPlaces] = useState(false);
   const autoCompleteRef = useRef<HTMLInputElement>(null);
-  const [selectedLocation, setSelectedLocation] = useState<{
-    lat: number;
-    lng: number;
-  } | null>(null);
+
+  const {
+    selectedLocation,
+    setSelectedLocation,
+    selectedPlaces,
+    setSelectedPlaces,
+  } = useCircuitCreationStore();
 
   const onPlaceChanged = async () => {
     if (autocomplete) {
@@ -54,26 +58,29 @@ const CityAndPlaces = ({ form }: Props) => {
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng(),
         });
-        // Fetch nearby places using the city's coordinates
-        await fetchNearbyPlaces(place.geometry.location);
       }
     }
   };
 
-  const fetchNearbyPlaces = async (location: google.maps.LatLng) => {
-    setIsLoadingPlaces(true);
-    try {
-      const service = new google.maps.places.PlacesService(
-        document.createElement("div")
-      );
+  const { data: nearbyPlaces, isLoading: isLoadingPlaces } = useQuery({
+    queryKey: ["nearbyPlaces", selectedLocation],
+    queryFn: () => fetchNearbyPlaces(selectedLocation!),
+    enabled: !!selectedLocation,
+  });
 
-      const request: google.maps.places.PlaceSearchRequest = {
-        location: location,
-        radius: 20000, // 20km radius
-        type: "tourist_attraction",
-        rankBy: google.maps.places.RankBy.PROMINENCE,
-      };
+  const fetchNearbyPlaces = async (location: google.maps.LatLngLiteral) => {
+    const service = new google.maps.places.PlacesService(
+      document.createElement("div")
+    );
 
+    const request: google.maps.places.PlaceSearchRequest = {
+      location: location,
+      radius: 20000, // 20km radius
+      type: "tourist_attraction",
+      rankBy: google.maps.places.RankBy.PROMINENCE,
+    };
+
+    return new Promise<Place[]>((resolve, reject) => {
       service.nearbySearch(request, (results, status) => {
         if (status === google.maps.places.PlacesServiceStatus.OK && results) {
           const formattedPlaces: Place[] = results.map((result) => ({
@@ -85,21 +92,18 @@ const CityAndPlaces = ({ form }: Props) => {
             latitude: result.geometry?.location?.lat().toString(),
             longitude: result.geometry?.location?.lng().toString(),
           }));
-          setPlaces(formattedPlaces);
+          resolve(formattedPlaces);
+        } else {
+          reject(new Error(`Places API error: ${status}`));
         }
-        setIsLoadingPlaces(false);
       });
-    } catch (error) {
-      console.error("Failed to fetch places:", error);
-      setIsLoadingPlaces(false);
-    }
+    });
   };
 
   const [searchQuery, setSearchQuery] = useState("");
-  const filteredPlaces = places.filter((place) =>
+  const filteredPlaces = nearbyPlaces?.filter((place) =>
     place.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
-  const [selectedPlaces, setSelectedPlaces] = useState<Set<string>>(new Set());
 
   const handlePlaceSelection = (placeId: string) => {
     const newSelectedPlaces = new Set(selectedPlaces);
@@ -121,51 +125,42 @@ const CityAndPlaces = ({ form }: Props) => {
           <FormItem>
             <FormLabel>City</FormLabel>
             <FormControl>
-              <LoadScript
-                googleMapsApiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}
-                libraries={["places"]}
-              >
-                <div className="space-y-4">
-                  <Autocomplete
-                    onLoad={setAutocomplete}
-                    onPlaceChanged={onPlaceChanged}
-                    options={{
-                      types: ["(cities)"],
-                    }}
-                  >
-                    <Input
-                      ref={autoCompleteRef}
-                      type="text"
-                      className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                      placeholder="Search for a city..."
-                    />
-                  </Autocomplete>
+              <div className="space-y-4">
+                <Autocomplete
+                  onLoad={setAutocomplete}
+                  onPlaceChanged={onPlaceChanged}
+                  options={{
+                    types: ["(cities)"],
+                  }}
+                >
+                  <Input
+                    ref={autoCompleteRef}
+                    type="text"
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    placeholder="Search for a city..."
+                  />
+                </Autocomplete>
 
-                  <div className="h-[300px] w-full rounded-md">
-                    <GoogleMap
-                      zoom={12}
-                      center={
-                        selectedLocation || { lat: 51.5074, lng: -0.1278 }
-                      }
-                      mapContainerClassName="w-full h-full rounded-md"
-                    >
-                      {selectedLocation && (
-                        <Marker position={selectedLocation} />
-                      )}
-                      {places.map((place) => (
-                        <Marker
-                          key={place.id}
-                          position={{
-                            lat: parseFloat(place.latitude || "0"),
-                            lng: parseFloat(place.longitude || "0"),
-                          }}
-                          onClick={() => handlePlaceSelection(place.id)}
-                        />
-                      ))}
-                    </GoogleMap>
-                  </div>
+                <div className="h-[300px] w-full rounded-md">
+                  <GoogleMap
+                    zoom={12}
+                    center={selectedLocation || { lat: 51.5074, lng: -0.1278 }}
+                    mapContainerClassName="w-full h-full rounded-md"
+                  >
+                    {selectedLocation && <Marker position={selectedLocation} />}
+                    {nearbyPlaces?.map((place) => (
+                      <Marker
+                        key={place.id}
+                        position={{
+                          lat: parseFloat(place.latitude || "0"),
+                          lng: parseFloat(place.longitude || "0"),
+                        }}
+                        onClick={() => handlePlaceSelection(place.id)}
+                      />
+                    ))}
+                  </GoogleMap>
                 </div>
-              </LoadScript>
+              </div>
             </FormControl>
             <FormDescription>
               Select the city where your circuit will take place
@@ -195,16 +190,20 @@ const CityAndPlaces = ({ form }: Props) => {
               className="mb-4"
             />
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {filteredPlaces.map((place) => (
-                <SelectableCard
-                  key={place.id}
-                  selected={selectedPlaces.has(place.id)}
-                  onClick={() => handlePlaceSelection(place.id)}
-                  title={place.name}
-                  description={place.description}
-                  image={place.image}
-                />
-              ))}
+              {isLoadingPlaces
+                ? Array.from({ length: 12 }).map((_, index) => (
+                    <Skeleton key={index} className="w-full h-40 rounded-md" />
+                  ))
+                : filteredPlaces?.map((place) => (
+                    <SelectableCard
+                      key={place.id}
+                      selected={selectedPlaces.has(place.id)}
+                      onClick={() => handlePlaceSelection(place.id)}
+                      title={place.name}
+                      description={place.description}
+                      image={place.image}
+                    />
+                  ))}
             </div>
           </>
         )}
