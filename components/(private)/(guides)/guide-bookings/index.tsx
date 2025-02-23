@@ -24,10 +24,7 @@ import {
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
-import {
-  getPendingBookings,
-  getConfirmedBookings,
-} from "@/services/database/bookings";
+import { getBookings } from "@/services/database/bookings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
@@ -40,7 +37,7 @@ export default function GuideBookings() {
     isError: isPendingBookingsError,
   } = useQuery({
     queryKey: useQueryCacheKeys.pendingBookings(),
-    queryFn: getPendingBookings,
+    queryFn: () => getBookings({ status : "pending"}),
   });
 
   const {
@@ -49,7 +46,7 @@ export default function GuideBookings() {
     isError: isConfirmedBookingsError,
   } = useQuery({
     queryKey: useQueryCacheKeys.pendingBookings(),
-    queryFn: getConfirmedBookings,
+    queryFn: () => getBookings({ status : "confirmed"}),
   });
 
   const handleAccept = (bookingId: number) => {
