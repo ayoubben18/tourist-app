@@ -48,4 +48,38 @@ const getBookings = authenticatedAction.create(
   }
 );
 
-export { getBookings };
+const confirmBooking = authenticatedAction.create(
+  z.object({
+    booking_id: z.number().positive(),
+  }),
+  async ({ booking_id }, context) => {
+    await db
+     .update(bookings)
+     .set({ status: "confirmed" })
+     .where(
+        and(
+          eq(bookings.booking_id, booking_id),
+          eq(bookings.guide_id, context.userId)
+        )
+      );
+    }
+)
+
+const rejectBooking = authenticatedAction.create(
+  z.object({
+    booking_id: z.number().positive(),
+  }),
+  async ({ booking_id }, context) => {
+    await db
+    .update(bookings)
+    .set({ status: "cancelled" })
+     .where(
+        and(
+          eq(bookings.booking_id, booking_id),
+          eq(bookings.guide_id, context.userId)
+        )
+      );
+    }
+)
+
+export { getBookings, confirmBooking, rejectBooking };
