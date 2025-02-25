@@ -180,37 +180,56 @@ const createCircuit = authenticatedAction.create(
         );
 
         if (!existingRelation.length) {
-          //   try {
-          //     const testResponse = await client.distancematrix({
-          //       params: {
-          //         origins: [`place_id:${origin}`],
-          //         destinations: [`place_id:${destination}`],
-          //         key: process.env.GOOGLE_MAPS_API_KEY!,
-          //       },
-          //     });
-          //     console.log("Distance Matrix API response:", testResponse.status);
-          //   } catch (error: any) {
-          //     console.error("Google Maps API Error:", {
-          //       status: error.response?.status,
-          //       message: error.response?.data?.error_message || error.message,
-          //     });
-          //     throw error;
-          //   }
-
-          // Mock distance matrix function for development/testing
-          const getMockDistanceMatrix = (
+          const calculateDistance = async (
             origin: string,
             destination: string
           ) => {
-            // Return mock values: ~2km distance and ~5min duration
+            // Get place details for both points to extract coordinates
+            const originResponse = await client.placeDetails({
+              params: {
+                place_id: origin,
+                key: process.env.GOOGLE_MAPS_API_KEY!,
+              },
+            });
+
+            const destResponse = await client.placeDetails({
+              params: {
+                place_id: destination,
+                key: process.env.GOOGLE_MAPS_API_KEY!,
+              },
+            });
+
+            const originLat = originResponse.data.result.geometry?.location.lat;
+            const originLng = originResponse.data.result.geometry?.location.lng;
+            const destLat = destResponse.data.result.geometry?.location.lat;
+            const destLng = destResponse.data.result.geometry?.location.lng;
+
+            // Calculate distance using Haversine formula
+            const R = 6371e3; // Earth's radius in meters
+            const φ1 = ((originLat || 0) * Math.PI) / 180;
+            const φ2 = ((destLat || 0) * Math.PI) / 180;
+            const Δφ = (((destLat || 0) - (originLat || 0)) * Math.PI) / 180;
+            const Δλ = (((destLng || 0) - (originLng || 0)) * Math.PI) / 180;
+
+            const a =
+              Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
+              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+            const distance = R * c; // distance in meters
+
+            // Estimate duration based on walking speed (5 km/h = ~1.4 m/s)
+            const walkingSpeedMps = 1.4; // meters per second
+            const duration = distance / walkingSpeedMps;
+
             return {
-              distance: { value: 2000 }, // meters
-              duration: { value: 300 }, // seconds
+              distance: { value: Math.round(distance) },
+              duration: { value: Math.round(duration) },
             };
           };
 
-          // Use mock values instead
-          const element = getMockDistanceMatrix(origin, destination);
+          // Use real distance calculation
+          const element = await calculateDistance(origin, destination);
           const distance = element.distance.value;
           const duration = element.duration.value;
 

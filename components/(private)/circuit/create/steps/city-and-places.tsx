@@ -49,6 +49,7 @@ const CityAndPlaces = ({ form }: Props) => {
   } = useCircuitCreationStore();
 
   const onPlaceChanged = async () => {
+    form.setValue("places", []);
     if (autocomplete) {
       const place = autocomplete.getPlace();
       if (place.place_id && place.geometry?.location) {
