@@ -11,7 +11,14 @@ import { getGuide } from "@/services/database/guide";
 import { getComments, removeComment } from "@/services/database/guide-comments";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Award, DollarSign, MessageCircle, Star, Trash2 } from "lucide-react";
+import {
+  Award,
+  DollarSign,
+  Flag,
+  MessageCircle,
+  Star,
+  Trash2,
+} from "lucide-react";
 import { useParams } from "next/navigation";
 import { useRouter } from "next/navigation";
 import React, { useState } from "react";
@@ -150,6 +157,18 @@ export default function guideDetails() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-6">
+                    {/* Country */}
+                    {guide.country && (
+                      <div className="flex items-center">
+                        <Flag className="w-5 h-5 mr-3 text-purple-500" />
+                        <div>
+                          <h3 className="text-sm text-muted-foreground">
+                            Country
+                          </h3>
+                          <p className="font-medium">{guide.country}</p>
+                        </div>
+                      </div>
+                    )}
                     {/* Experience */}
                     {guide.years_of_experience && (
                       <div className="flex items-center">
@@ -249,11 +268,13 @@ export default function guideDetails() {
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Add Comment Section */}
-              {isAuthenticated && isAuthenticated.isAuthenticated && isAuthenticated.user_id != guide_id && (
-                <div className="mb-6">
-                  <AddGuideReviewForm guide_id={guide_id} />
-                </div>
-              )}
+              {isAuthenticated &&
+                isAuthenticated.isAuthenticated &&
+                isAuthenticated.user_id != guide_id && (
+                  <div className="mb-6">
+                    <AddGuideReviewForm guide_id={guide_id} />
+                  </div>
+                )}
               {commentsLoading ? (
                 Array(3)
                   .fill(0)

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { startTransition, useOptimistic } from "react";
 import dynamic from "next/dynamic";
 import {
   Heart,
@@ -57,6 +57,7 @@ export default function App() {
   const circuit_id = Number(id);
   const router = useRouter();
   const queryClient = useQueryClient();
+
   const { isAuthenticated, isAuthenticatedLoading } = useIsAuthenticated();
 
   const {
@@ -99,6 +100,19 @@ export default function App() {
     enabled:
       isAuthenticated && isAuthenticated.isAuthenticated && !isNaN(circuit_id),
   });
+
+  //useOptimistic hooks
+
+  const [optimisticLike, addOptimisticLike] = useOptimistic(
+    likeData?.isLiked ?? false,
+    (_, newLike: boolean) => newLike
+  );
+
+  const [optimisticFavorite, addOptimisticFavorite] = useOptimistic(
+    favoriteData?.isFavorite ?? false,
+    (_, newFavorite: boolean) => newFavorite
+  );
+
 
   // const likeData = { isLiked: false, like_id: null}
   // const isLikedLoading = false
@@ -162,14 +176,15 @@ export default function App() {
           isAuthenticated?.user_id || "0"
         ),
       });
-      queryClient.invalidateQueries( {queryKey: useQueryCacheKeys.circuitWithPOI(circuit_id)});
+      queryClient.invalidateQueries({
+        queryKey: useQueryCacheKeys.circuitWithPOI(circuit_id),
+      });
       toast.success("Circuit removed from favorites!");
     },
     onError: () => {
       toast.error("Failed to remove from favorites");
     },
   });
-
 
   const { mutateAsync: deleteCommentMutation } = useMutation({
     mutationFn: removeComment,
@@ -198,29 +213,47 @@ export default function App() {
   };
 
   const handleLike = async () => {
-    if (handleAuthenticatedAction()) {
-      if (likeData?.isLiked) {
-        await unlike({ like_id: likeData.like_id! });
-        queryClient.invalidateQueries({ queryKey: useQueryCacheKeys.isLiked });
-      } else {
+    if (!handleAuthenticatedAction()) return;
+
+    const newLikeStatus = !optimisticLike;
+    startTransition(() => {
+      addOptimisticLike(newLikeStatus);
+    });
+
+    try {
+      if (newLikeStatus) {
         await like({ circuit_id });
+      } else {
+        await unlike({ like_id: likeData!.like_id! });
       }
+    } catch (error) {
+      startTransition(() => {
+        addOptimisticLike(!newLikeStatus);
+      });
+      toast.error("Failed to update like");
     }
   };
 
   const handleSave = async () => {
-    if (handleAuthenticatedAction()) {
-      if (favoriteData?.isFavorite) {
-        await unsave({ favorite_id: favoriteData.favorite_id! });
-        queryClient.invalidateQueries({
-          queryKey: useQueryCacheKeys.isFavorite,
-        });
-      } else {
+    if (!handleAuthenticatedAction()) return;
+    const newFavoriteStatus = !optimisticFavorite;
+    startTransition(() => {
+      addOptimisticFavorite(newFavoriteStatus);
+    });
+
+    try {
+      if (newFavoriteStatus) {
         await save({ circuit_id });
+      } else {
+        await unsave({ favorite_id: favoriteData!.favorite_id! });
       }
+    } catch (error) {
+      startTransition(() => {
+        addOptimisticFavorite(!newFavoriteStatus);
+      });
+      toast.error("Failed to update favorite");
     }
   };
-
 
   const handleDeleteComment = async (comment_id: number) => {
     if (handleAuthenticatedAction()) {
@@ -305,11 +338,13 @@ export default function App() {
 
         {/* Circuit title and description */}
         <div className="space-y-2">
-        <div className="flex items-center text-yellow-500 ">
+          <div className="flex items-center text-yellow-500 ">
             <Star className="w-5 h-5 fill-yellow-500" />
             <span className="ml-1 text-sm font-medium flex gap-1">
               {circuitWithPOI.rating ?? "No rating"}
-              <p className="font-thin text-gray-700">({circuitWithPOI.number_of_reviews})</p>
+              <p className="font-thin text-gray-700">
+                ({circuitWithPOI.number_of_reviews})
+              </p>
             </span>
           </div>
           <h1 className="text-3xl font-bold">{circuitWithPOI.name}</h1>
@@ -383,49 +418,39 @@ export default function App() {
             Take this Trip
           </button>
           <div className="flex gap-4">
+            {/* Like Button */}
             <Button
               variant="outline"
               className="flex-1 flex items-center justify-center gap-2"
               onClick={handleLike}
               disabled={
-                isAuthenticated?.isAuthenticated
-                  ? isLikeLoading || isLikedLoading
-                  : false
+                isAuthenticated?.isAuthenticated ? isLikedLoading : false
               }
             >
               <Heart
                 className={`w-5 h-5 ${
-                  likeData?.isLiked ? "fill-rose-500 text-rose-500" : ""
+                  optimisticLike ? "fill-rose-500 text-rose-500" : ""
                 }`}
               />
-              {isLikeLoading
-                ? likeData?.isLiked
-                  ? "Unliking..."
-                  : "Liking..."
-                : likeData?.isLiked
-                ? "Unlike"
-                : "Like"}
+              {optimisticLike ? "Unlike" : "Like"}
             </Button>
+            {/* favorite button */}
             <Button
               variant="outline"
               className="flex-1 flex items-center justify-center gap-2"
               onClick={handleSave}
               disabled={
                 isAuthenticated?.isAuthenticated
-                  ? isFavoriteLoading || isFavoritedLoading
+                  ? isFavoritedLoading
                   : false
               }
             >
               <Bookmark
                 className={`w-5 h-5 ${
-                  favoriteData?.isFavorite ? "fill-primary text-primary" : ""
+                  optimisticFavorite ? "fill-primary text-primary" : ""
                 }`}
               />
-              {isFavoriteLoading
-                ? favoriteData?.isFavorite
-                  ? "Removing..."
-                  : "Saving..."
-                : favoriteData?.isFavorite
+              {optimisticFavorite
                 ? "Remove from Favorites"
                 : "Add to Favorites"}
             </Button>

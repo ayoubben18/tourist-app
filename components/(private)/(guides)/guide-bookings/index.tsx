@@ -22,15 +22,17 @@ import {
   CalendarClock,
   CircleDollarSign,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import useQueryCacheKeys from "@/utils/use-query-cache-keys";
 import {
-  getPendingBookings,
-  getConfirmedBookings,
+  confirmBooking,
+  getBookings,
+  rejectBooking,
 } from "@/services/database/bookings";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { toast } from "sonner";
+import { BookingCard } from "./booking-card";
 
 export default function GuideBookings() {
   const queryClient = useQueryClient();
@@ -40,7 +42,7 @@ export default function GuideBookings() {
     isError: isPendingBookingsError,
   } = useQuery({
     queryKey: useQueryCacheKeys.pendingBookings(),
-    queryFn: getPendingBookings,
+    queryFn: () => getBookings({ status: "pending" }),
   });
 
   const {
@@ -48,27 +50,56 @@ export default function GuideBookings() {
     isLoading: isConfirmedBookingsLoading,
     isError: isConfirmedBookingsError,
   } = useQuery({
-    queryKey: useQueryCacheKeys.pendingBookings(),
-    queryFn: getConfirmedBookings,
+    queryKey: useQueryCacheKeys.confirmedBookings(),
+    queryFn: () => getBookings({ status: "confirmed" }),
+  });
+
+  const { mutateAsync: confirm, isPending: isConfirming } = useMutation({
+    mutationFn: confirmBooking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: useQueryCacheKeys.pendingBookings(),
+      });
+      queryClient.invalidateQueries({
+        queryKey: useQueryCacheKeys.confirmedBookings(),
+      });
+    },
+    onError: () => {
+      console.error("Failed to confirm booking")
+    },
+  });
+
+  const { mutateAsync: reject, isPending: isRejecting } = useMutation({
+    mutationFn: rejectBooking,
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: useQueryCacheKeys.pendingBookings(),
+      });
+    },
+    onError: () => {
+      console.error("Failed to reject booking");
+    },
   });
 
   const handleAccept = (bookingId: number) => {
-    queryClient.invalidateQueries({
-      queryKey: useQueryCacheKeys.pendingBookings(),
-    });
-    queryClient.invalidateQueries({
-      queryKey: useQueryCacheKeys.confirmedBookings(),
-    });
-    //actual logic
-    toast.success("Booking accepted");
+    toast.promise(
+      confirm({ booking_id: bookingId }),
+      {
+        loading: "Saving changes...",
+        success: "You've confirmed this booking!",
+        error: "Failed to confirm this booking!",
+      }
+    )
   };
 
   const handleReject = (bookingId: number) => {
-    queryClient.invalidateQueries({
-      queryKey: useQueryCacheKeys.pendingBookings(),
-    });
-    //actual logic
-    toast.error("Booking rejected");
+    toast.promise(
+      reject({ booking_id: bookingId }),
+      {
+        loading: "Saving changes...",
+        success: "You've rejected this booking!",
+        error: "Failed to reject this booking!",
+      })
   };
 
   if (isPendingBookingsError || isConfirmedBookingsError) {
@@ -81,6 +112,30 @@ export default function GuideBookings() {
         </Alert>
       </div>
     );
+  }
+
+  function formatCircuitDuration(minutes: number) {
+    const hours = Math.floor(minutes / 60);
+    const remainingMinutes = minutes % 60;
+    if (remainingMinutes === 0) {
+      return `${hours} hour${hours !== 1 ? "s" : ""}`;
+    }
+    return `${hours} hour${hours !== 1 ? "s" : ""} ${remainingMinutes} minute${
+      remainingMinutes !== 1 ? "s" : ""
+    }`;
+  }
+
+  function formatBookingDate(dateString: string): string {
+    const date = new Date(dateString);
+    const options: Intl.DateTimeFormatOptions = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    };
+    return date.toLocaleString(undefined, options);
   }
 
   return (
@@ -101,84 +156,46 @@ export default function GuideBookings() {
             </CardHeader>
             <CardContent>
               {isPendingBookingsLoading ? (
-                <div className="container mx-auto py-8 px-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
-                        <Skeleton className="h-[400px] w-full" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="space-y-3">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <Skeleton className="h-4 w-[250px]" />
+                            <Skeleton className="h-4 w-[200px]" />
+                            <Skeleton className="h-[150px] w-full" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
                 </div>
               ) : pendingBookings && pendingBookings.length > 0 ? (
                 <ScrollArea className="h-[425px] pr-4">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {pendingBookings.map((booking) => (
-                      <Card
+                      <BookingCard
                         key={booking.booking_id}
-                        className="p-4 hover:shadow-lg transition-shadow"
-                      >
-                        <div className="flex flex-col h-full">
-                          <div className="flex items-start space-x-4">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage
-                                src={
-                                  booking.creator_avatar ||
-                                  "https://i.pinimg.com/1200x/2c/47/d5/2c47d5dd5b532f83bb55c4cd6f5bd1ef.jpg"
-                                }
-                                alt={booking.creator!}
-                              />
-                              <AvatarFallback>
-                                {booking.creator![0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h3 className="font-semibold">
-                                  {booking.creator}
-                                </h3>
-                                <Badge variant="secondary">Pending</Badge>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground mt-4">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              <span>{booking.circuit_duration}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4" />
-                              <span>{booking.booking_date}</span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <CircleDollarSign className="h-4 w-4" />
-                              <span>{booking.total_price} DHS</span>
-                            </div>
-                          </div>
-                          <div className="flex justify-end space-x-2 mt-4">
-                            <Button
-                              size="sm"
-                              onClick={() => handleAccept(booking.booking_id)}
-                              className="flex items-center gap-1"
-                            >
-                              <CheckCircle2 className="h-3 w-3" />
-                              Accept
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="destructive"
-                              onClick={() => handleReject(booking.booking_id)}
-                              className="flex items-center gap-1"
-                            >
-                              <XCircle className="h-3 w-3" />
-                              Reject
-                            </Button>
-                          </div>
-                        </div>
-                      </Card>
+                        status="pending"
+                        creator={booking.creator!}
+                        creatorAvatar={booking.creator_avatar}
+                        formattedDuration={
+                          booking.circuit_duration
+                            ? formatCircuitDuration(booking.circuit_duration)
+                            : "Duration not available"
+                        }
+                        formattedDate={
+                          booking.booking_date
+                            ? formatBookingDate(booking.booking_date)
+                            : "Booking date not available"
+                        }
+                        totalPrice={booking.total_price}
+                        bookingId={booking.booking_id}
+                        circuit_id={booking.circuit_id!}
+                        onAccept={handleAccept}
+                        onReject={handleReject}
+                      />
                     ))}
                   </div>
                 </ScrollArea>
@@ -201,67 +218,44 @@ export default function GuideBookings() {
             </CardHeader>
             <CardContent>
               {isConfirmedBookingsLoading ? (
-                <div className="container mx-auto py-8 px-4">
-                  <Card>
-                    <CardContent className="p-4">
-                      <div className="space-y-3">
-                        <Skeleton className="h-4 w-[250px]" />
-                        <Skeleton className="h-4 w-[200px]" />
-                        <Skeleton className="h-[400px] w-full" />
-                      </div>
-                    </CardContent>
-                  </Card>
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                  {[...Array(8)].map((_, i) => (
+                    <div key={i} className="space-y-3">
+                      <Card>
+                        <CardContent className="p-4">
+                          <div className="space-y-3">
+                            <Skeleton className="h-4 w-[250px]" />
+                            <Skeleton className="h-4 w-[200px]" />
+                            <Skeleton className="h-[150px] w-full" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+                  ))}
                 </div>
               ) : confirmedBookings && confirmedBookings.length > 0 ? (
                 <ScrollArea className="h-[600px] pr-4">
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
                     {confirmedBookings.map((booking) => (
-                      <Card
+                      <BookingCard
                         key={booking.booking_id}
-                        className="p-4 hover:shadow-lg transition-shadow"
-                      >
-                        <div className="flex flex-col h-full">
-                          <div className="flex items-start space-x-4">
-                            <Avatar className="h-12 w-12">
-                              <AvatarImage
-                                src={
-                                  booking.creator_avatar ||
-                                  "https://i.pinimg.com/1200x/2c/47/d5/2c47d5dd5b532f83bb55c4cd6f5bd1ef.jpg"
-                                }
-                                alt={booking.creator!}
-                              />
-                              <AvatarFallback>
-                                {booking.creator![0]}
-                              </AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
-                                <h3 className="font-semibold">
-                                  {booking.creator}
-                                </h3>
-                                <Badge className="bg-green-100 text-green-800">
-                                  Confirmed
-                                </Badge>
-                              </div>
-                            </div>
-                          </div>
-                          <div className="grid grid-cols-2 gap-2 text-sm text-muted-foreground mt-4">
-                            <div className="flex items-center gap-2">
-                              <Clock className="h-4 w-4" />
-                              <span>{booking.circuit_duration}</span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              <CalendarDays className="h-4 w-4" />
-                              <span>{booking.booking_date}</span>
-                            </div>
-
-                            <div className="flex items-center gap-2">
-                              <CircleDollarSign className="h-4 w-4" />
-                              <span>{booking.total_price} DHS</span>
-                            </div>
-                          </div>
-                        </div>
-                      </Card>
+                        status="confirmed"
+                        creator={booking.creator!}
+                        creatorAvatar={booking.creator_avatar}
+                        formattedDuration={
+                          booking.circuit_duration
+                            ? formatCircuitDuration(booking.circuit_duration)
+                            : "Duration not available"
+                        }
+                        formattedDate={
+                          booking.booking_date
+                            ? formatBookingDate(booking.booking_date)
+                            : "Booking date not available"
+                        }
+                        totalPrice={booking.total_price}
+                        bookingId={booking.booking_id}
+                        circuit_id={booking.circuit_id!}
+                      />
                     ))}
                   </div>
                 </ScrollArea>

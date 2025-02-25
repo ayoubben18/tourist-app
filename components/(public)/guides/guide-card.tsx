@@ -9,7 +9,7 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { useRouter } from "next/navigation";
-import { Star } from "lucide-react";
+import { MapPin, Star } from "lucide-react";
 import { ROUTES } from "@/routes";
 import { GuideDTO } from "@/dto/guides-dto";
 
@@ -33,6 +33,9 @@ export function GuideCard({ guide }: GuideCardProps) {
             {guide.years_of_experience
               ? `${guide.years_of_experience} years of experience`
               : "Experience not available"}
+          </p>
+          <p className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
+            <span>{guide.country}</span>
           </p>
         </div>
       </CardHeader>
