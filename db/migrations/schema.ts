@@ -846,9 +846,11 @@ export const bookings = pgTable("bookings", {
     mode: "string",
     withTimezone: true,
   }),
+  estimated_duration: integer("estimated_duration"),
   status: booking_status("status"),
   created_at: timestamp("created_at").defaultNow(),
   total_price: decimal("total_price", { precision: 10, scale: 2 }),
+  test: text("test"),
 });
 
 export const circuit_comments = pgTable("circuit_comments", {

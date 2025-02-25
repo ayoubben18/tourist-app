@@ -1,11 +1,26 @@
 "use server";
 
-import { eq, ilike, and, or, gte, lte } from "drizzle-orm";
 import { db } from "@/db";
-import { authenticatedAction, publicAction } from "../server-only";
-import { guide_profiles, users_additional_info } from "@/db/migrations/schema";
+import {
+  bookings,
+  guide_profiles,
+  users_additional_info,
+} from "@/db/migrations/schema";
 import { GuideDTO } from "@/dto/guides-dto";
+import {
+  and,
+  eq,
+  gte,
+  ilike,
+  lte,
+  arrayContains,
+  not,
+  exists,
+  sql,
+  or,
+} from "drizzle-orm";
 import { z } from "zod";
+import { publicAction } from "../server-only";
 
 const getGuides = publicAction.create(
   z.object({
@@ -13,14 +28,21 @@ const getGuides = publicAction.create(
     yearsOfExperience: z.number().positive().optional(),
     pricePerHour: z.number().positive().optional(),
     rating: z.number().positive().optional(),
+    city: z.string().optional(),
+    startTime: z.date().optional(),
+    duration: z.number().positive().optional(),
   }),
   async ({
     searchTerm,
     yearsOfExperience,
     pricePerHour,
     rating,
+    city,
+    startTime,
+    duration,
   }): Promise<GuideDTO[]> => {
     const whereClause = and(
+      city ? arrayContains(guide_profiles.cities, [city]) : undefined,
       eq(guide_profiles.verification_status, "approved"),
       searchTerm
         ? or(
@@ -43,6 +65,42 @@ const getGuides = publicAction.create(
             )
         : undefined,
       rating ? gte(guide_profiles.rating, String(rating)) : undefined
+      // startTime && duration
+      //   ? not(
+      //       exists(
+      //         db
+      //           .select()
+      //           .from(bookings)
+      //           .where(
+      //             and(
+      //               eq(bookings.guide_id, guide_profiles.id),
+      //               or(
+      //                 // Check if new booking overlaps with existing booking start
+      //                 and(
+      //                   lte(bookings.booking_date, startTime.toISOString()),
+      //                   gte(
+      //                     sql`${bookings.booking_date} + interval '1 minute' * ${bookings.estimated_duration}`,
+      //                     startTime
+      //                   )
+      //                 ),
+      //                 // Check if new booking overlaps with existing booking end
+      //                 and(
+      //                   lte(
+      //                     bookings.booking_date,
+      //                     sql`${startTime} + interval '1 minute' * ${duration}`
+      //                   ),
+      //                   gte(
+      //                     sql`${bookings.booking_date} + interval '1 minute' * ${bookings.estimated_duration}`,
+      //                     sql`${startTime} + interval '1 minute' * ${duration}`
+      //                   )
+      //                 )
+      //               ),
+      //               not(eq(bookings.status, "cancelled"))
+      //             )
+      //           )
+      //       )
+      //     )
+      //   : undefined
     );
     const guides = await db
       .select({
@@ -104,4 +162,4 @@ const getGuide = publicAction.create(
   }
 );
 
-export { getGuides, getGuide };
+export { getGuide, getGuides };

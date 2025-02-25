@@ -8,6 +8,7 @@ type GuideDTO = Omit<
   | "verified_at"
   | "available_days"
   | "cities"
+  | "country"
 > & {
   id: UsersAdditionalInfo["id"];
   full_name: UsersAdditionalInfo["full_name"];
