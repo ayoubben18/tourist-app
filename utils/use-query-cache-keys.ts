@@ -45,6 +45,19 @@ const useQueryCacheKeys = {
   ],
   confirmedBookings: () => [
     "confirmedBookings"
+  ],
+  myCircuits: (user_id: string) => [
+    "myCircuits",
+    user_id
+  ],
+  likedCircuits: (user_id: string) => [
+    "likedCircuits",
+    user_id
+  ],
+  favoriteCircuits: (user_id: string) => [
+    "favorites",
+    "favorites",
+    user_id
   ]
 };
 

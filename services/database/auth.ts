@@ -212,6 +212,7 @@ const getUserInfo = authenticatedAction.create(async ({ userId, email }) => {
       id: users_additional_info.id,
       full_name: users_additional_info.full_name,
       avatar_url: users_additional_info.avatar_url,
+      bio: users_additional_info.bio,
       role: users_additional_info.role,
     })
     .from(users_additional_info)
@@ -225,7 +226,19 @@ const isUserAuthenticated = publicAction.create(async () => {
   const supabase = await createClient();
   const { data, error } = await supabase.auth.getUser();
 
-  return data.user ? { isAuthenticated: true, user_id: data.user.id} : {isAuthenticated: false, user_id: null}
+  return data.user
+    ? { isAuthenticated: true, user_id: data.user.id }
+    : { isAuthenticated: false, user_id: null };
+});
+
+const getUserRole = authenticatedAction.create(async (context) => {
+  const role = await db
+    .select({
+      role: users_additional_info.role,
+    })
+    .from(users_additional_info)
+    .where(eq(users_additional_info.id, context.userId));
+  return role[0].role;
 });
 
 export {
@@ -235,4 +248,5 @@ export {
   signOut,
   getUserInfo,
   isUserAuthenticated,
+  getUserRole
 };

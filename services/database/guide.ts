@@ -20,7 +20,7 @@ import {
   or,
 } from "drizzle-orm";
 import { z } from "zod";
-import { publicAction } from "../server-only";
+import { authenticatedAction, publicAction } from "../server-only";
 
 const getGuides = publicAction.create(
   z.object({
@@ -136,6 +136,7 @@ const getGuide = publicAction.create(
     const guide = await db
       .select({
         id: guide_profiles.id,
+        verification_status: guide_profiles.verification_status,
         full_name: users_additional_info.full_name,
         avatar_url: users_additional_info.avatar_url,
         years_of_experience: guide_profiles.years_of_experience,
@@ -150,16 +151,38 @@ const getGuide = publicAction.create(
         users_additional_info,
         eq(guide_profiles.id, users_additional_info.id)
       )
-      .where(
-        and(
-          eq(guide_profiles.id, guide_id),
-          eq(guide_profiles.verification_status, "approved")
-        )
-      )
+      .where(eq(guide_profiles.id, guide_id))
       .then((res) => res[0]);
 
     return guide;
   }
 );
 
-export { getGuide, getGuides };
+const availableHoursSchema = z.object({
+  Monday: z.array(z.string()),
+  Tuesday: z.array(z.string()),
+  Wednesday: z.array(z.string()),
+  Thursday: z.array(z.string()),
+  Friday: z.array(z.string()),
+  Saturday: z.array(z.string()),
+  Sunday: z.array(z.string()),
+});
+
+const updateGuideProfile = authenticatedAction.create(
+  z.object({
+    years_of_experience: z.number().optional(),
+    price_per_hour: z.string().optional(),
+    available_hours: availableHoursSchema.optional(),
+  }),
+  async ({ ...updateData }, context) => {
+    const guide = await db
+      .update(guide_profiles)
+      .set(updateData)
+      .where(eq(guide_profiles.id, context.userId))
+      .returning();
+
+    return guide[0];
+  }
+);
+
+export { getGuides, getGuide, updateGuideProfile };

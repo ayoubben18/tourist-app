@@ -3,12 +3,10 @@ import { GuideProfile, UsersAdditionalInfo } from "@/db/migrations/schema";
 type GuideDTO = Omit<
   GuideProfile,
   | "id"
-  | "verification_status"
   | "authorization_document"
   | "verified_at"
   | "available_days"
   | "cities"
-  | "country"
 > & {
   id: UsersAdditionalInfo["id"];
   full_name: UsersAdditionalInfo["full_name"];
