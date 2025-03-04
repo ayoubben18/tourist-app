@@ -52,7 +52,6 @@ const createCircuit = authenticatedAction.create(
           .from(cities)
           .where(eq(cities.google_place_id, city));
 
-        console.log("response", response.photos);
         if (!cityRecord) {
           // let imageUrl = "";
           // if (response.photos) {
@@ -177,7 +176,6 @@ const createCircuit = authenticatedAction.create(
     }
 
     const paths = await getShortestPath([startingPlace, ...places]);
-    console.log("paths", paths);
 
     let circuitId = 0;
     let estimatedDuration = Math.floor(
@@ -186,7 +184,6 @@ const createCircuit = authenticatedAction.create(
     let distance = parseFloat(
       paths.reduce((acc, path) => acc + path.distance, 0).toString()
     ).toFixed(2);
-    console.log("here1", distance);
     await db.transaction(async (tx) => {
       const [circuitRecord] = await tx
         .insert(circuits)
@@ -200,7 +197,6 @@ const createCircuit = authenticatedAction.create(
           estimated_duration: estimatedDuration,
         })
         .returning();
-      console.log("here2", circuitRecord);
 
       await tx.insert(bookings).values({
         booking_date: new Date(startTime).toISOString(),
@@ -211,7 +207,6 @@ const createCircuit = authenticatedAction.create(
         status: "pending",
       });
 
-      console.log("booking");
       circuitId = circuitRecord.id;
     });
 
@@ -304,7 +299,6 @@ const insertCityInNeo4j = async (
       longitude,
     }
   );
-  console.log("result", result);
   return result[0];
 };
 
