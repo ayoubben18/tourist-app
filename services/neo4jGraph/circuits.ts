@@ -52,12 +52,26 @@ const createCircuit = authenticatedAction.create(
           .from(cities)
           .where(eq(cities.google_place_id, city));
 
+        console.log("response", response.photos);
         if (!cityRecord) {
+          // let imageUrl = "";
+          // if (response.photos) {
+          //   for (const photo of response.photos) {
+          //     if (photo.html_attributions?.[0]) {
+          //       const match =
+          //         photo.html_attributions[0].match(/href="([^"]*)"/);
+          //       if (match?.[1]) {
+          //         imageUrl = match[1];
+          //         break;
+          //       }
+          //     }
+          //   }
+          // }
           const [insertedCity] = await tx
             .insert(cities)
             .values({
               google_place_id: city,
-              // image_url: response.data.result.photos[0].,
+              // image_url: imageUrl,
               name: response.name,
               country: response.address_components?.[0]?.short_name,
               description: response.vicinity,
@@ -252,6 +266,10 @@ const getCityFromNeo4j = async (cityId: string, neo4j: Neo4jGraph) => {
       cityId,
     }
   );
+
+  if (result.length === 0) {
+    return null;
+  }
   return result[0].city;
 };
 
@@ -262,6 +280,9 @@ const getPlaceFromNeo4j = async (placeId: string, neo4j: Neo4jGraph) => {
       placeId,
     }
   );
+  if (result.length === 0) {
+    return null;
+  }
   return result[0].place;
 };
 
@@ -274,7 +295,7 @@ const insertCityInNeo4j = async (
   longitude: number
 ) => {
   const result = await neo4j.query(
-    `CREATE (city:City {id: $city, name: $name, country: $country, latitude: $latitude, longitude: $longitude}) RETURN c`,
+    `CREATE (city:City {id: $city, name: $name, country: $country, latitude: $latitude, longitude: $longitude}) RETURN city`,
     {
       city,
       name,
@@ -289,16 +310,15 @@ const insertCityInNeo4j = async (
 
 const insertLocatedInRelation = async (
   neo4j: Neo4jGraph,
-  place: string,
-  city: string
+  placeId: string,
+  cityId: string
 ) => {
   const result = await neo4j.query(
-    ` MATCH (p:Place {id: $place})
-      MATCH (c:City {id: $city})
+    ` MATCH (p:Place {id: $placeId})
+      MATCH (c:City {id: $cityId})
       MERGE (p)-[:LOCATED_IN]->(c)`,
-    { place, city }
+    { placeId, cityId }
   );
-  return result[0];
 };
 const insertPlaceInNeo4j = async (
   neo4j: Neo4jGraph,
@@ -306,11 +326,11 @@ const insertPlaceInNeo4j = async (
   name: string,
   latitude: number,
   longitude: number,
-  city: string
+  cityId: string
 ) => {
   await neo4j.query(
-    `CREATE (p:Place {id: $placeId, name: $name, latitude: $latitude, longitude: $longitude, city: $city}) RETURN p`,
-    { placeId, name, latitude, longitude, city }
+    `CREATE (p:Place {id: $placeId, name: $name, latitude: $latitude, longitude: $longitude, city: $cityId}) RETURN p`,
+    { placeId, name, latitude, longitude, cityId }
   );
 };
 
