@@ -58,6 +58,9 @@ const useQueryCacheKeys = {
     "favorites",
     "favorites",
     user_id
+  ],
+  pendingGuides: () => [
+    "pendingGuides"
   ]
 };
 

@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   bookings,
   guide_profiles,
+  objectsInStorage,
   users_additional_info,
 } from "@/db/migrations/schema";
 import { GuideDTO } from "@/dto/guides-dto";
@@ -21,6 +22,7 @@ import {
 } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedAction, publicAction } from "../server-only";
+import { createClient } from "@/utils/supabase/server-client";
 
 const getGuides = publicAction.create(
   z.object({
@@ -185,4 +187,63 @@ const updateGuideProfile = authenticatedAction.create(
   }
 );
 
-export { getGuides, getGuide, updateGuideProfile };
+const getPendingGuides = publicAction.create(async () => {
+  const supabase = await createClient();
+
+  const getPublicUrl = (fileName: string): string => {
+    return supabase.storage.from("documents").getPublicUrl(fileName).data.publicUrl;
+  };
+  const pendingGuides = await db
+    .select({
+      id: guide_profiles.id,
+      full_name: users_additional_info.full_name,
+      avatar_url: users_additional_info.avatar_url,
+      years_of_experience: guide_profiles.years_of_experience,
+      authorization_document: objectsInStorage.name,
+      country: guide_profiles.country,
+    })
+    .from(guide_profiles)
+    .innerJoin(users_additional_info, eq(guide_profiles.id, users_additional_info.id))
+    .innerJoin(objectsInStorage, eq(guide_profiles.authorization_document, objectsInStorage.id))
+    .where(eq(guide_profiles.verification_status, "pending"));
+  return pendingGuides.map(guide => ({
+    ...guide,
+    authorization_document_url: getPublicUrl(guide.authorization_document!),
+  }));
+});
+
+const approveGuide = authenticatedAction.create(
+  z.object({
+    guide_id: z.string(),
+  }),
+  async ({ guide_id }) => {
+    await db
+      .update(guide_profiles)
+      .set({
+        verification_status: "approved",
+        verified_at: new Date().toISOString(),
+      })
+      .where(eq(guide_profiles.id, guide_id));
+  }
+);
+
+const rejectGuide = authenticatedAction.create(
+  z.object({
+    guide_id: z.string(),
+  }),
+  async ({ guide_id }) => {
+    await db
+      .update(guide_profiles)
+      .set({ verification_status: "rejected", verified_at: null })
+      .where(eq(guide_profiles.id, guide_id));
+  }
+);
+
+export {
+  getGuides,
+  getGuide,
+  updateGuideProfile,
+  getPendingGuides,
+  approveGuide,
+  rejectGuide,
+};

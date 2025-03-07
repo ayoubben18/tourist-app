@@ -12,7 +12,7 @@ import {
 import { ROUTES } from "@/routes";
 import { useRouter } from "next/navigation";
 import { useAuth, useIsAuthenticated } from "@/hooks/use-auth";
-import { LogOut } from "lucide-react";
+import { LayoutDashboard, LogOut } from "lucide-react";
 import { Moon } from "lucide-react";
 
 import {
@@ -211,14 +211,26 @@ export function UserNav() {
         </div>
         <div className="p-2">
           <div className="grid gap-1">
-            <Button
-              variant="ghost"
-              className="w-full justify-start"
-              onClick={() => router.push(ROUTES.private.profile)}
-            >
-              <User className="mr-2 h-4 w-4" />
-              <span>Profile</span>
-            </Button>
+            {userInfo && userInfo.role != "admin" && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => router.push(ROUTES.private.profile)}
+              >
+                <User className="mr-2 h-4 w-4" />
+                <span>Profile</span>
+              </Button>
+            )}
+            {userInfo && userInfo.role == "admin" && (
+              <Button
+                variant="ghost"
+                className="w-full justify-start"
+                onClick={() => router.push(ROUTES.private.adminDashboard)}
+              >
+                <LayoutDashboard className="mr-2 h-4 w-4" />
+                <span>Dashboard</span>
+              </Button>
+            )}
             <Button variant="ghost" className="w-full justify-start">
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
