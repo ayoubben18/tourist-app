@@ -9,6 +9,7 @@ import {
   likes,
   points_of_interest,
   users_additional_info,
+  bookings,
 } from "@/db/migrations/schema";
 import type { CircuitsDTO } from "@/dto/circuits-dto";
 import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
@@ -234,6 +235,73 @@ const getCircuitWithPOI = publicAction.create(
   }
 );
 
+const getUpcomingTrips = authenticatedAction.create(
+  async (context): Promise<CircuitsDTO[]> => {
+    // Get circuits created by the user
+    const createdCircuits = await db
+      .select({
+        id: circuits.id,
+        name: circuits.name,
+        description: circuits.description,
+        estimated_duration: circuits.estimated_duration,
+        distance: circuits.distance,
+        rating: circuits.rating,
+        number_of_reviews: circuits.number_of_reviews,
+        creator: users_additional_info.full_name,
+        creator_avatar: users_additional_info.avatar_url,
+        city: cities.name,
+        country: cities.country,
+        image: cities.image_url,
+      })
+      .from(circuits)
+      .innerJoin(
+        users_additional_info,
+        eq(circuits.creator_id, users_additional_info.id)
+      )
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
+      .where(eq(circuits.creator_id, context.userId));
+
+    // Get circuits booked by the user that are pending or confirmed
+    const bookedCircuits = await db
+      .select({
+        id: circuits.id,
+        name: circuits.name,
+        description: circuits.description,
+        estimated_duration: circuits.estimated_duration,
+        distance: circuits.distance,
+        rating: circuits.rating,
+        number_of_reviews: circuits.number_of_reviews,
+        creator: users_additional_info.full_name,
+        creator_avatar: users_additional_info.avatar_url,
+        city: cities.name,
+        country: cities.country,
+        image: cities.image_url,
+      })
+      .from(bookings)
+      .innerJoin(circuits, eq(bookings.circuit_id, circuits.id))
+      .innerJoin(
+        users_additional_info,
+        eq(circuits.creator_id, users_additional_info.id)
+      )
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
+      .where(
+        and(
+          eq(bookings.tourist_id, context.userId),
+          or(eq(bookings.status, "pending"), eq(bookings.status, "confirmed"))
+        )
+      );
+
+    // Combine both arrays and remove duplicates based on circuit id
+    const allCircuits = [...createdCircuits, ...bookedCircuits];
+    const uniqueCircuits = allCircuits.filter(
+      (circuit, index, self) =>
+        index === self.findIndex((c) => c.id === circuit.id)
+    );
+
+    return uniqueCircuits;
+  }
+);
+
 const getMyCircuits = authenticatedAction.create(
   async (context): Promise<CircuitsDTO[]> => {
     const myCircuits = await db
@@ -320,12 +388,48 @@ const getFavoriteCircuits = authenticatedAction.create(
   }
 );
 
+const getCompletedTrips = authenticatedAction.create(
+  async (context): Promise<CircuitsDTO[]> => {
+    const completedTrips = await db
+      .select({
+        id: circuits.id,
+        name: circuits.name,
+        description: circuits.description,
+        estimated_duration: circuits.estimated_duration,
+        distance: circuits.distance,
+        rating: circuits.rating,
+        number_of_reviews: circuits.number_of_reviews,
+        creator: users_additional_info.full_name,
+        creator_avatar: users_additional_info.avatar_url,
+        city: cities.name,
+        country: cities.country,
+        image: cities.image_url,
+      })
+      .from(bookings)
+      .innerJoin(circuits, eq(bookings.circuit_id, circuits.id))
+      .innerJoin(
+        users_additional_info,
+        eq(circuits.creator_id, users_additional_info.id)
+      )
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
+      .where(
+        and(
+          eq(bookings.tourist_id, context.userId),
+          eq(bookings.status, "completed")
+        )
+      );
+    return completedTrips;
+  }
+);
+
 export {
   getPublicCircuits,
   getCircuit,
   getPointsOfInterestOfCircuit,
   getCircuitWithPOI,
+  getUpcomingTrips,
   getMyCircuits,
   getLikedCircuits,
   getFavoriteCircuits,
+  getCompletedTrips,
 };
