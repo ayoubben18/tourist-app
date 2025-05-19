@@ -5,13 +5,15 @@ import {
   circuit_points,
   circuits,
   cities,
+  favorites,
+  likes,
   points_of_interest,
   users_additional_info,
 } from "@/db/migrations/schema";
 import { CircuitsDTO } from "@/dto/circuits-dto";
 import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { z } from "zod";
-import { publicAction } from "../server-only";
+import { authenticatedAction, publicAction } from "../server-only";
 import { PointOfInterestDTO } from "@/dto/points-of-interest-dto";
 
 const getPublicCircuits = publicAction.create(
@@ -232,9 +234,98 @@ const getCircuitWithPOI = publicAction.create(
   }
 );
 
+const getMyCircuits = authenticatedAction.create(
+  async (context): Promise<CircuitsDTO[]> => {
+    const myCircuits = await db
+      .select({
+        id: circuits.id,
+        name: circuits.name,
+        description: circuits.description,
+        estimated_duration: circuits.estimated_duration,
+        distance: circuits.distance,
+        rating: circuits.rating,
+        number_of_reviews: circuits.number_of_reviews,
+        creator: users_additional_info.full_name,
+        creator_avatar: users_additional_info.avatar_url,
+        city: cities.name,
+        country: cities.country,
+        image: cities.image_url,
+      })
+      .from(circuits)
+      .innerJoin(
+        users_additional_info,
+        eq(circuits.creator_id, users_additional_info.id)
+      )
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
+      .where(eq(circuits.creator_id, context.userId));
+    return myCircuits;
+  }
+);
+
+const getLikedCircuits = authenticatedAction.create(
+  async (context): Promise<CircuitsDTO[]> => {
+    const likedCircuits = await db
+      .select({
+        id: circuits.id,
+        name: circuits.name,
+        description: circuits.description,
+        estimated_duration: circuits.estimated_duration,
+        distance: circuits.distance,
+        rating: circuits.rating,
+        number_of_reviews: circuits.number_of_reviews,
+        creator: users_additional_info.full_name,
+        creator_avatar: users_additional_info.avatar_url,
+        city: cities.name,
+        country: cities.country,
+        image: cities.image_url,
+      })
+      .from(circuits)
+      .innerJoin(likes, eq(likes.circuit_id, circuits.id))
+      .innerJoin(
+        users_additional_info,
+        eq(circuits.creator_id, users_additional_info.id)
+      )
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
+      .where(eq(likes.user_id, context.userId));
+    return likedCircuits;
+  }
+);
+
+const getFavoriteCircuits = authenticatedAction.create(
+  async (context): Promise<CircuitsDTO[]> => {
+    const favoriteCircuits = await db
+      .select({
+        id: circuits.id,
+        name: circuits.name,
+        description: circuits.description,
+        estimated_duration: circuits.estimated_duration,
+        distance: circuits.distance,
+        rating: circuits.rating,
+        number_of_reviews: circuits.number_of_reviews,
+        creator: users_additional_info.full_name,
+        creator_avatar: users_additional_info.avatar_url,
+        city: cities.name,
+        country: cities.country,
+        image: cities.image_url,
+      })
+      .from(circuits)
+      .innerJoin(favorites, eq(favorites.circuit_id, circuits.id))
+      .innerJoin(
+        users_additional_info,
+        eq(circuits.creator_id, users_additional_info.id)
+      )
+      .innerJoin(cities, eq(cities.id, circuits.city_id))
+      .where(eq(favorites.user_id, context.userId));
+    return favoriteCircuits;
+  }
+);
+
 export {
   getPublicCircuits,
   getCircuit,
   getPointsOfInterestOfCircuit,
   getCircuitWithPOI,
+  getMyCircuits,
+  getLikedCircuits,
+  getFavoriteCircuits,
 };

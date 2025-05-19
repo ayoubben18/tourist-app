@@ -4,6 +4,7 @@ import { db } from "@/db";
 import {
   bookings,
   guide_profiles,
+  objectsInStorage,
   users_additional_info,
 } from "@/db/migrations/schema";
 import { GuideDTO } from "@/dto/guides-dto";
@@ -20,7 +21,8 @@ import {
   or,
 } from "drizzle-orm";
 import { z } from "zod";
-import { publicAction } from "../server-only";
+import { authenticatedAction, publicAction } from "../server-only";
+import { createClient } from "@/utils/supabase/server-client";
 
 const getGuides = publicAction.create(
   z.object({
@@ -136,6 +138,7 @@ const getGuide = publicAction.create(
     const guide = await db
       .select({
         id: guide_profiles.id,
+        verification_status: guide_profiles.verification_status,
         full_name: users_additional_info.full_name,
         avatar_url: users_additional_info.avatar_url,
         years_of_experience: guide_profiles.years_of_experience,
@@ -150,16 +153,97 @@ const getGuide = publicAction.create(
         users_additional_info,
         eq(guide_profiles.id, users_additional_info.id)
       )
-      .where(
-        and(
-          eq(guide_profiles.id, guide_id),
-          eq(guide_profiles.verification_status, "approved")
-        )
-      )
+      .where(eq(guide_profiles.id, guide_id))
       .then((res) => res[0]);
 
     return guide;
   }
 );
 
-export { getGuide, getGuides };
+const availableHoursSchema = z.object({
+  Monday: z.array(z.string()),
+  Tuesday: z.array(z.string()),
+  Wednesday: z.array(z.string()),
+  Thursday: z.array(z.string()),
+  Friday: z.array(z.string()),
+  Saturday: z.array(z.string()),
+  Sunday: z.array(z.string()),
+});
+
+const updateGuideProfile = authenticatedAction.create(
+  z.object({
+    years_of_experience: z.number().optional(),
+    price_per_hour: z.string().optional(),
+    available_hours: availableHoursSchema.optional(),
+  }),
+  async ({ ...updateData }, context) => {
+    const guide = await db
+      .update(guide_profiles)
+      .set(updateData)
+      .where(eq(guide_profiles.id, context.userId))
+      .returning();
+
+    return guide[0];
+  }
+);
+
+const getPendingGuides = publicAction.create(async () => {
+  const supabase = await createClient();
+
+  const getPublicUrl = (fileName: string): string => {
+    return supabase.storage.from("documents").getPublicUrl(fileName).data.publicUrl;
+  };
+  const pendingGuides = await db
+    .select({
+      id: guide_profiles.id,
+      full_name: users_additional_info.full_name,
+      avatar_url: users_additional_info.avatar_url,
+      years_of_experience: guide_profiles.years_of_experience,
+      authorization_document: objectsInStorage.name,
+      country: guide_profiles.country,
+    })
+    .from(guide_profiles)
+    .innerJoin(users_additional_info, eq(guide_profiles.id, users_additional_info.id))
+    .innerJoin(objectsInStorage, eq(guide_profiles.authorization_document, objectsInStorage.id))
+    .where(eq(guide_profiles.verification_status, "pending"));
+  return pendingGuides.map(guide => ({
+    ...guide,
+    authorization_document_url: getPublicUrl(guide.authorization_document!),
+  }));
+});
+
+const approveGuide = authenticatedAction.create(
+  z.object({
+    guide_id: z.string(),
+  }),
+  async ({ guide_id }) => {
+    await db
+      .update(guide_profiles)
+      .set({
+        verification_status: "approved",
+        verified_at: new Date().toISOString(),
+      })
+      .where(eq(guide_profiles.id, guide_id));
+  }
+);
+
+const rejectGuide = authenticatedAction.create(
+  z.object({
+    guide_id: z.string(),
+  }),
+  async ({ guide_id }) => {
+    await db
+      .update(guide_profiles)
+      .set({ verification_status: "rejected", verified_at: null })
+      .where(eq(guide_profiles.id, guide_id));
+  }
+);
+
+export {
+  getGuides,
+  getGuide,
+  updateGuideProfile,
+  getPendingGuides,
+  approveGuide,
+  rejectGuide,
+};

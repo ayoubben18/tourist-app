@@ -19,5 +19,6 @@ export const ROUTES = {
     },
     profile: "/profile",
     settings: "/settings",
+    adminDashboard: "/admin-dashboard",
   },
 } as const;
