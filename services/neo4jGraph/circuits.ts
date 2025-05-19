@@ -146,7 +146,9 @@ const createCircuit = authenticatedAction.create(
       }
     }
 
-    console.log(placesToInsert);
+    const circuitSteps: { steps_data: any[] } = {
+      steps_data: []
+    }
 
     // Create relationships between places with distances
     for (let i = 0; i < placesToInsert.length; i++) {
@@ -166,6 +168,7 @@ const createCircuit = authenticatedAction.create(
           const distance = element.distance.value;
           const duration = element.duration.value;
 
+          circuitSteps.steps_data.push(element.steps);
           // Create bidirectional relationships with distance and duration
           await insertBidirectionalConnectsToRelation(
             neo4j,
@@ -177,6 +180,7 @@ const createCircuit = authenticatedAction.create(
         }
       }
     }
+
 
 
     const paths = await getShortestPath([startingPlace, ...places]);
@@ -199,6 +203,7 @@ const createCircuit = authenticatedAction.create(
           is_public: isPublic,
           distance: distance,
           estimated_duration: estimatedDuration,
+          route_steps: circuitSteps,
         })
         .returning();
 
@@ -410,6 +415,7 @@ const calculateDistance = async (
   return {
     distance: { value: distance },
     duration: { value: duration },
+    steps: data
   };
 };
 
