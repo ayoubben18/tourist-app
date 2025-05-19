@@ -13,7 +13,7 @@ import { Form } from "@/components/ui/form";
 import { useCircuitForm } from "@/hooks/circuits/use-circuit-form";
 
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import React from "react";
+import type React from "react";
 import SelectVisibility from "./steps/circuit-visibility";
 import CityAndPlaces from "./steps/city-and-places";
 import SelectGuide from "./steps/select-guide";
@@ -24,8 +24,8 @@ import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { ROUTES } from "@/routes";
 import { LoadScript } from "@react-google-maps/api";
-import { createCircuitSchema } from "@/utils/schemas";
-import { z } from "zod";
+import type { createCircuitSchema } from "@/utils/schemas";
+import type { z } from "zod";
 type StepType = {
   id: number;
   title: string;

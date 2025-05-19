@@ -771,6 +771,8 @@ export const circuits = pgTable("circuits", {
   number_of_reviews: integer("number_of_reviews").default(0),
 });
 
+
+
 export const circuit_points = pgTable("circuit_points", {
   id: serial("id").primaryKey().notNull(),
   circuit_id: integer("circuit_id")

@@ -10,11 +10,11 @@ import {
   points_of_interest,
   users_additional_info,
 } from "@/db/migrations/schema";
-import { CircuitsDTO } from "@/dto/circuits-dto";
+import type { CircuitsDTO } from "@/dto/circuits-dto";
 import { and, desc, eq, gte, ilike, lte, or } from "drizzle-orm";
 import { z } from "zod";
 import { authenticatedAction, publicAction } from "../server-only";
-import { PointOfInterestDTO } from "@/dto/points-of-interest-dto";
+import type { PointOfInterestDTO } from "@/dto/points-of-interest-dto";
 
 const getPublicCircuits = publicAction.create(
   z.object({
@@ -35,22 +35,22 @@ const getPublicCircuits = publicAction.create(
       eq(circuits.is_public, true),
       searchTerm
         ? or(
-            ilike(circuits.name, "%" + searchTerm + "%"),
-            ilike(circuits.description, "%" + searchTerm + "%")
-          )
+          ilike(circuits.name, "%" + searchTerm + "%"),
+          ilike(circuits.description, "%" + searchTerm + "%")
+        )
         : undefined,
       duration
         ? and(
-            gte(circuits.estimated_duration, duration * 60 - 60),
-            lte(circuits.estimated_duration, duration * 60 + 60)
-          )
+          gte(circuits.estimated_duration, duration * 60 - 60),
+          lte(circuits.estimated_duration, duration * 60 + 60)
+        )
         : undefined,
 
       distance
         ? and(
-            gte(circuits.distance, String(distance - 1)),
-            lte(circuits.distance, String(distance + 1))
-          )
+          gte(circuits.distance, String(distance - 1)),
+          lte(circuits.distance, String(distance + 1))
+        )
         : undefined,
       rating ? gte(circuits.rating, String(rating)) : undefined
     );

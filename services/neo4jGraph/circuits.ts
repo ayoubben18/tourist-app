@@ -10,9 +10,13 @@ import {
   circuit_points,
   circuits,
   cities,
+  guide_profiles,
   points_of_interest,
 } from "@/db/migrations/schema";
-
+import { insertNeo4jCity } from "./cities";
+import { getNeo4jPlace, insertNeo4jPlace } from "./places";
+import { insertLocatedIn } from "./located-in";
+import { getConnectsTo, insertConnectsTo } from "./connects-to";
 const createCircuit = authenticatedAction.create(
   createCircuitSchema,
   async (props, { userId }) => {
@@ -45,16 +49,13 @@ const createCircuit = authenticatedAction.create(
 
       consoleLogger(response.data.result);
 
-      await neo4j.query(
-        `CREATE (c:City {id: $city, name: $name, country: $country, latitude: $latitude, longitude: $longitude}) RETURN c`,
-        {
-          city,
-          name: response.data.result.name,
-          country: response.data.result.address_components?.[0]?.short_name,
-          latitude: response.data.result.geometry?.location.lat,
-          longitude: response.data.result.geometry?.location.lng,
-        }
-      );
+      await insertNeo4jCity({
+        city: city,
+        name: response.data.result.name,
+        country: response.data.result.address_components?.[0]?.short_name,
+        latitude: response.data.result.geometry?.location.lat,
+        longitude: response.data.result.geometry?.location.lng,
+      });
 
       await db.transaction(async (tx) => {
         const [cityRecord] = await tx
@@ -93,10 +94,7 @@ const createCircuit = authenticatedAction.create(
 
     // Create places if they don't exist and link them to the city
     for (const place of placesToInsert) {
-      let placeNode = await neo4j.query(
-        `MATCH (p:Place {id: $place}) RETURN p`,
-        { place }
-      );
+      let placeNode = await getNeo4jPlace(place);
 
       if (!placeNode.length) {
         const response = await client.placeDetails({
@@ -106,23 +104,14 @@ const createCircuit = authenticatedAction.create(
           },
         });
 
-        await neo4j.query(
-          `
-          CREATE (p:Place {id: $place, name: $name, coordinates: $coordinates})
-          WITH p
-          MATCH (c:City {id: $city})
-          CREATE (p)-[:LOCATED_IN]->(c)
-          RETURN p
-          `,
-          {
-            place,
-            name: response.data.result.name,
-            city,
-            coordinates: JSON.stringify(
-              response.data.result.geometry?.location
-            ),
-          }
-        );
+        await insertNeo4jPlace({
+          placeId: place,
+          name: response.data.result.name,
+          cityId: city,
+          latitude: response.data.result.geometry?.location.lat,
+          longitude: response.data.result.geometry?.location.lng,
+        });
+
         await db.transaction(async (tx) => {
           const [placeRecord] = await tx
             .select()
@@ -153,14 +142,10 @@ const createCircuit = authenticatedAction.create(
         });
       } else {
         // If place exists, ensure it's connected to the city
-        await neo4j.query(
-          `
-          MATCH (p:Place {id: $place})
-          MATCH (c:City {id: $city})
-          MERGE (p)-[:LOCATED_IN]->(c)
-          `,
-          { place, city }
-        );
+        await insertLocatedIn({
+          placeId: place,
+          cityId: city,
+        });
       }
     }
 
@@ -171,13 +156,10 @@ const createCircuit = authenticatedAction.create(
         const destination = placesToInsert[j];
 
         // Check if relationship already exists
-        const existingRelation = await neo4j.query(
-          `
-          MATCH (p1:Place {id: $origin})-[r:CONNECTS_TO]-(p2:Place {id: $destination})
-          RETURN r
-          `,
-          { origin, destination }
-        );
+        const existingRelation = await getConnectsTo({
+          origin,
+          destination,
+        });
 
         if (!existingRelation.length) {
           const calculateDistance = async (
@@ -234,26 +216,12 @@ const createCircuit = authenticatedAction.create(
           const duration = element.duration.value;
 
           // Create bidirectional relationships with distance and duration
-          await neo4j.query(
-            `
-            MATCH (p1:Place {id: $origin})
-            MATCH (p2:Place {id: $destination})
-            MERGE (p1)-[:CONNECTS_TO {
-              distance: $distance,
-              duration: $duration
-            }]->(p2)
-            MERGE (p2)-[:CONNECTS_TO {
-              distance: $distance,
-              duration: $duration
-            }]->(p1)
-            `,
-            {
-              origin,
-              destination,
-              distance,
-              duration,
-            }
-          );
+          await insertConnectsTo({
+            origin,
+            destination,
+            distance,
+            duration,
+          });
         }
       }
     }
@@ -262,7 +230,7 @@ const createCircuit = authenticatedAction.create(
 
     let circuitId = 0;
     let estimatedDuration = paths.reduce((acc, path) => acc + path.duration, 0);
-    let distance = parseFloat(
+    let distance = Number.parseFloat(
       paths.reduce((acc, path) => acc + path.distance, 0).toString()
     ).toFixed(2);
     await db.transaction(async (tx) => {
@@ -280,9 +248,22 @@ const createCircuit = authenticatedAction.create(
         .returning();
       console.log("circuitRecord", circuitRecord);
 
+      let price: string | null = null;
+      if (guideId) {
+        const [guide] = await tx
+          .select()
+          .from(guide_profiles)
+          .where(eq(guide_profiles.id, guideId));
+        if (guide && guide.price_per_hour) {
+          price = (
+            Number(guide.price_per_hour) * (estimatedDuration / 60)
+          ).toFixed(2);
+        }
+      }
+
       await tx.insert(bookings).values({
         booking_date: new Date(startTime).toISOString(),
-        total_price: "100",
+        total_price: price,
         circuit_id: circuitRecord.id,
         tourist_id: userId,
         guide_id: guideId,
@@ -341,34 +322,89 @@ const getShortestPath = async (placesIds: string[]) => {
 
   const result = await neo4j.query(
     `
-  WITH $placesIds as ids
-MATCH (places:Place)
-WHERE places.id IN ids
-WITH places, ids
-ORDER BY CASE places.id WHEN ids[0] THEN 0 ELSE 1 END, places.id
+// Input: $placesIds (list of string IDs)
 
-WITH collect(places) as orderedPlaces
-UNWIND range(0, size(orderedPlaces)-2) as i
-WITH orderedPlaces[i] as current, orderedPlaces[i+1] as next
-MATCH path = shortestPath((current)-[:CONNECTS_TO*]->(next))
-WITH [p in nodes(path)] as route
-UNWIND range(0, size(route)-2) as i
-WITH route[i] as current, route[i+1] as next
-MATCH (current)-[r:CONNECTS_TO]->(next)
-RETURN 
-  current.name as currentStop,
-  current.id as currentId,
-  next.name as nextStop,
-  next.id as nextId,
-  r.distance as distance,
-  r.duration as duration,
-  current.latitude as currentLat,
-  current.longitude as currentLng,
-  next.latitude as nextLat,
-  next.longitude as nextLng
+// Stage 0: Handle cases with less than 2 places directly.
+WITH $placesIds AS p_ids
+WHERE size(p_ids) >= 2 // Proceed only if there are at least two places to form a circuit segment.
+
+// Stage 1: Get node objects and define start and intermediates
+MATCH (n:Place) WHERE n.id IN p_ids
+WITH p_ids, collect(n) AS all_nodes_obj_unordered
+// Create an ordered list of node objects based on p_ids to correctly identify startNode
+WITH p_ids, [id IN p_ids | [node_obj IN all_nodes_obj_unordered WHERE node_obj.id = id][0]] AS all_nodes_obj_ordered
+WITH all_nodes_obj_ordered[0] AS startNodeObj, all_nodes_obj_ordered[1..] AS intermediateNodeObjsList
+
+// Stage 2: Find the optimal sequence of intermediate nodes + form the full tour
+// This subquery finds the sequence of node *objects* for the optimal tour
+CALL {
+    WITH startNodeObj, intermediateNodeObjsList
+    // If no intermediate nodes, tour is start -> start. Sequence: [startNodeObj, startNodeObj]
+    WHEN size(intermediateNodeObjsList) = 0 THEN
+        RETURN [startNodeObj, startNodeObj] AS optimal_tour_node_objects, 0.0 AS min_total_duration
+    ELSE
+        // Generate permutations of intermediate node *objects*
+        CALL apoc.coll.permutations(intermediateNodeObjsList) YIELD value AS permuted_intermediate_node_objects
+        // Construct the full tour sequence of node objects for this permutation
+        WITH startNodeObj, [startNodeObj] + permuted_intermediate_node_objects + [startNodeObj] AS current_tour_node_objects
+        
+        // Calculate total duration for this current_tour_node_objects using Dijkstra for each segment
+        CALL {
+            WITH current_tour_node_objects
+            UNWIND range(0, size(current_tour_node_objects) - 2) AS i
+            WITH current_tour_node_objects[i] AS u_node, current_tour_node_objects[i+1] AS v_node
+            // Use Dijkstra to find the shortest path based on 'duration' for the segment u_node -> v_node
+            CALL apoc.algo.dijkstra(u_node, v_node, 'CONNECTS_TO', 'duration') YIELD weight AS segment_duration
+            // Ensure path exists for this segment
+            WHERE segment_duration IS NOT NULL AND segment_duration >= 0
+            RETURN sum(segment_duration) AS tour_total_duration_for_permutation
+        }
+        // Filter out permutations that might lead to non-existent paths (if tour_total_duration_for_permutation is null)
+        WHERE tour_total_duration_for_permutation IS NOT NULL
+        RETURN current_tour_node_objects, tour_total_duration_for_permutation
+        ORDER BY tour_total_duration_for_permutation ASC
+        LIMIT 1
+        // Returns: optimal_tour_node_objects (list of node objects), min_total_duration (total duration)
+}
+// optimal_tour_node_objects is the list of actual node objects in the optimal tour order
+
+// Stage 3: Deconstruct the optimal tour into detailed path segments
+// Unwind each leg of the optimal tour (e.g., A->B, B->C, C->A)
+UNWIND range(0, size(optimal_tour_node_objects) - 2) AS i_tour_leg
+WITH optimal_tour_node_objects[i_tour_leg] AS major_leg_start_node,
+     optimal_tour_node_objects[i_tour_leg+1] AS major_leg_end_node
+
+// For each major leg (e.g., A to B), find its detailed shortest path using Dijkstra (again, could be multi-hop A-X-Y-B)
+CALL apoc.algo.dijkstra(major_leg_start_node, major_leg_end_node, 'CONNECTS_TO', 'duration') YIELD path AS detailed_segment_path
+// Filter out if no path exists for a leg (should not happen if Stage 2 worked correctly)
+WHERE detailed_segment_path IS NOT NULL
+
+// Extract the sequence of nodes in this detailed_segment_path
+WITH nodes(detailed_segment_path) AS route_nodes_for_detailed_segment
+WHERE size(route_nodes_for_detailed_segment) >= 2 // Ensure the path has at least one hop
+
+// Unwind the hops within the detailed_segment_path (e.g., A->X, X->Y, Y->B)
+UNWIND range(0, size(route_nodes_for_detailed_segment) - 2) AS i_sub_hop
+WITH route_nodes_for_detailed_segment[i_sub_hop] AS current_hop_node,
+     route_nodes_for_detailed_segment[i_sub_hop+1] AS next_hop_node
+     
+// Get the direct :CONNECTS_TO relationship for this specific hop
+MATCH (current_hop_node)-[r_direct:CONNECTS_TO]->(next_hop_node)
+
+RETURN
+  current_hop_node.name AS currentStop,
+  current_hop_node.id AS currentId,
+  next_hop_node.name AS nextStop,
+  next_hop_node.id AS nextId,
+  r_direct.distance AS distance,
+  r_direct.duration AS duration,
+  current_hop_node.latitude AS currentLat,
+  current_hop_node.longitude AS currentLng,
+  next_hop_node.latitude AS nextLat,
+  next_hop_node.longitude AS nextLng
  `,
-    { placesIds }
+    { placesIds } // Pass the original placesIds array as a parameter
   );
-  return result as PathSegment[];
+  return (result as unknown) as PathSegment[]; // Added 'unknown' to bypass strict type checking if needed, then cast
 };
 export { createCircuit };
