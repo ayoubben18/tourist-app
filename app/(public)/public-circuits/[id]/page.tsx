@@ -365,8 +365,9 @@ export default function App() {
                   estimated_duration: poi.estimated_duration!,
                   opening_hours: poi.opening_hours || "",
                   category: poi.category,
-                  coordinates: poi.coordinates as [number, number],
+                  coordinates: poi.coordinates! as [number, number],
                 }))}
+              routeSteps={circuitWithPOI.route_steps}
             />
           )}
         </div>

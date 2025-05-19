@@ -31,27 +31,27 @@ const getPublicCircuits = publicAction.create(
     distance,
     rating,
     sortBy,
-  }): Promise<CircuitsDTO[]> => {
+  }): Promise<Omit<CircuitsDTO, "route_steps">[]> => {
     const whereClause = and(
       eq(circuits.is_public, true),
       searchTerm
         ? or(
-          ilike(circuits.name, "%" + searchTerm + "%"),
-          ilike(circuits.description, "%" + searchTerm + "%")
-        )
+            ilike(circuits.name, "%" + searchTerm + "%"),
+            ilike(circuits.description, "%" + searchTerm + "%")
+          )
         : undefined,
       duration
         ? and(
-          gte(circuits.estimated_duration, duration * 60 - 60),
-          lte(circuits.estimated_duration, duration * 60 + 60)
-        )
+            gte(circuits.estimated_duration, duration * 60 - 60),
+            lte(circuits.estimated_duration, duration * 60 + 60)
+          )
         : undefined,
 
       distance
         ? and(
-          gte(circuits.distance, String(distance - 1)),
-          lte(circuits.distance, String(distance + 1))
-        )
+            gte(circuits.distance, String(distance - 1)),
+            lte(circuits.distance, String(distance + 1))
+          )
         : undefined,
       rating ? gte(circuits.rating, String(rating)) : undefined
     );
@@ -99,7 +99,7 @@ const getCircuit = publicAction.create(
   z.object({
     circuit_id: z.string(),
   }),
-  async ({ circuit_id }): Promise<CircuitsDTO> => {
+  async ({ circuit_id }): Promise<Omit<CircuitsDTO, "route_steps">> => {
     const circuit = await db
       .select({
         id: circuits.id,
@@ -183,6 +183,7 @@ const getCircuitWithPOI = publicAction.create(
           city: cities.name,
           country: cities.country,
           image: cities.image_url,
+          route_steps: circuits.route_steps,
         })
         .from(circuits)
         .innerJoin(
@@ -236,7 +237,7 @@ const getCircuitWithPOI = publicAction.create(
 );
 
 const getUpcomingTrips = authenticatedAction.create(
-  async (context): Promise<CircuitsDTO[]> => {
+  async (context): Promise<Omit<CircuitsDTO, "route_steps">[]> => {
     // Get circuits created by the user
     const createdCircuits = await db
       .select({
@@ -303,7 +304,7 @@ const getUpcomingTrips = authenticatedAction.create(
 );
 
 const getMyCircuits = authenticatedAction.create(
-  async (context): Promise<CircuitsDTO[]> => {
+  async (context): Promise<Omit<CircuitsDTO, "route_steps">[]> => {
     const myCircuits = await db
       .select({
         id: circuits.id,
@@ -331,7 +332,7 @@ const getMyCircuits = authenticatedAction.create(
 );
 
 const getLikedCircuits = authenticatedAction.create(
-  async (context): Promise<CircuitsDTO[]> => {
+  async (context): Promise<Omit<CircuitsDTO, "route_steps">[]> => {
     const likedCircuits = await db
       .select({
         id: circuits.id,
@@ -360,7 +361,7 @@ const getLikedCircuits = authenticatedAction.create(
 );
 
 const getFavoriteCircuits = authenticatedAction.create(
-  async (context): Promise<CircuitsDTO[]> => {
+  async (context): Promise<Omit<CircuitsDTO, "route_steps">[]> => {
     const favoriteCircuits = await db
       .select({
         id: circuits.id,
@@ -389,7 +390,7 @@ const getFavoriteCircuits = authenticatedAction.create(
 );
 
 const getCompletedTrips = authenticatedAction.create(
-  async (context): Promise<CircuitsDTO[]> => {
+  async (context): Promise<Omit<CircuitsDTO, "route_steps">[]> => {
     const completedTrips = await db
       .select({
         id: circuits.id,
