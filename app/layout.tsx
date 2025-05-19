@@ -30,11 +30,11 @@ export default function RootLayout({
 }>) {
   return (
     <QueryProvider>
-      <NuqsAdapter>
-        <html lang="en">
-          <body
-            className={`${geistSans.variable} ${geistMono.variable} container mx-auto `}
-          >
+      <html lang="en">
+        <body
+          className={`${geistSans.variable} ${geistMono.variable} container mx-auto `}
+        >
+          <NuqsAdapter>
             <Toaster
               richColors
               position="top-right"
@@ -46,9 +46,9 @@ export default function RootLayout({
             {children}
             <Footer />
             <ReactQueryDevtools initialIsOpen={false} />
-          </body>
-        </html>
-      </NuqsAdapter>
+          </NuqsAdapter>
+        </body>
+      </html>
     </QueryProvider>
   );
 }
