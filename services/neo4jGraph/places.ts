@@ -23,7 +23,7 @@ const insertNeo4jPlace = async (props: InsertPlaceProps) => {
     const neo4j = await initializeNeo4j();
     await neo4j.query(
         `
-            CREATE(p: Place { id: $place, name: $name, coordinates: $coordinates })
+            CREATE(p: Place { id: $place, name: $name, latitude: $latitude, longitude: $longitude })
             WITH p
             MATCH(c: City { id: $city })
             CREATE(p) - [: LOCATED_IN] -> (c)

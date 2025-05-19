@@ -13,10 +13,8 @@ import {
   guide_profiles,
   points_of_interest,
 } from "@/db/migrations/schema";
-import { insertNeo4jCity } from "./cities";
-import { getNeo4jPlace, insertNeo4jPlace } from "./places";
-import { insertLocatedIn } from "./located-in";
-import { getConnectsTo, insertConnectsTo } from "./connects-to";
+import { Neo4jGraph } from "@langchain/community/graphs/neo4j_graph";
+import { inspect } from "util";
 const createCircuit = authenticatedAction.create(
   createCircuitSchema,
   async (props, { userId }) => {
@@ -35,27 +33,19 @@ const createCircuit = authenticatedAction.create(
     const client = new Client();
 
     // Check if city exists, if not create it
-    let cityNode = await neo4j.query(`MATCH (c:City {id: $city}) RETURN c`, {
-      city,
-    });
+    let cityNode = await getCityFromNeo4j(city, neo4j);
 
-    if (!cityNode.length) {
-      const response = await client.placeDetails({
-        params: {
-          place_id: city,
-          key: process.env.GOOGLE_MAPS_API_KEY!,
-        },
-      });
+    if (!cityNode) {
+      const response = await getPlaceInfosFromGoogleMaps(client, city);
 
-      consoleLogger(response.data.result);
-
-      await insertNeo4jCity({
-        city: city,
-        name: response.data.result.name,
-        country: response.data.result.address_components?.[0]?.short_name,
-        latitude: response.data.result.geometry?.location.lat,
-        longitude: response.data.result.geometry?.location.lng,
-      });
+      cityNode = await insertCityInNeo4j(
+        neo4j,
+        city,
+        response.name!,
+        response.address_components?.[0]?.short_name!,
+        response.geometry?.location.lat!,
+        response.geometry?.location.lng!
+      );
 
       await db.transaction(async (tx) => {
         const [cityRecord] = await tx
@@ -64,17 +54,30 @@ const createCircuit = authenticatedAction.create(
           .where(eq(cities.google_place_id, city));
 
         if (!cityRecord) {
+          // let imageUrl = "";
+          // if (response.photos) {
+          //   for (const photo of response.photos) {
+          //     if (photo.html_attributions?.[0]) {
+          //       const match =
+          //         photo.html_attributions[0].match(/href="([^"]*)"/);
+          //       if (match?.[1]) {
+          //         imageUrl = match[1];
+          //         break;
+          //       }
+          //     }
+          //   }
+          // }
           const [insertedCity] = await tx
             .insert(cities)
             .values({
               google_place_id: city,
-              // image_url: response.data.result.photos[0].,
-              name: response.data.result.name,
-              country: response.data.result.address_components?.[0]?.short_name,
-              description: response.data.result.vicinity,
+              // image_url: imageUrl,
+              name: response.name,
+              country: response.address_components?.[0]?.short_name,
+              description: response.vicinity,
               coordinates: [
-                response.data.result.geometry?.location.lat,
-                response.data.result.geometry?.location.lng,
+                response.geometry?.location.lat,
+                response.geometry?.location.lng,
               ],
             })
             .returning();
@@ -94,23 +97,20 @@ const createCircuit = authenticatedAction.create(
 
     // Create places if they don't exist and link them to the city
     for (const place of placesToInsert) {
-      let placeNode = await getNeo4jPlace(place);
+      let placeNode = await getPlaceFromNeo4j(place, neo4j);
 
-      if (!placeNode.length) {
-        const response = await client.placeDetails({
-          params: {
-            place_id: place,
-            key: process.env.GOOGLE_MAPS_API_KEY!,
-          },
-        });
+      if (!placeNode) {
+        const response = await getPlaceInfosFromGoogleMaps(client, place);
 
-        await insertNeo4jPlace({
-          placeId: place,
-          name: response.data.result.name,
-          cityId: city,
-          latitude: response.data.result.geometry?.location.lat,
-          longitude: response.data.result.geometry?.location.lng,
-        });
+        await insertPlaceInNeo4j(
+          neo4j,
+          place,
+          response.name!,
+          response.geometry?.location.lat!,
+          response.geometry?.location.lng!,
+          cityNode.name
+        );
+        await insertLocatedInRelation(neo4j, place, cityNode.id);
 
         await db.transaction(async (tx) => {
           const [placeRecord] = await tx
@@ -123,31 +123,30 @@ const createCircuit = authenticatedAction.create(
               .insert(points_of_interest)
               .values({
                 google_place_id: place,
-                name: response.data.result.name,
-                description: response.data.result.vicinity,
+                name: response.name,
+                description: response.vicinity,
                 coordinates: [
-                  response.data.result.geometry?.location.lat,
-                  response.data.result.geometry?.location.lng,
+                  response.geometry?.location.lat,
+                  response.geometry?.location.lng,
                 ],
                 city_id: cityId,
-                category: response.data.result.types?.[0],
-                estimated_duration: response.data.result.opening_hours
-                  ? response.data.result.opening_hours.weekday_text.length
+                category: response.types?.[0],
+                estimated_duration: response.opening_hours
+                  ? response.opening_hours.weekday_text.length
                   : 0,
-                address: response.data.result.formatted_address,
-                opening_hours: response.data.result.opening_hours,
+                address: response.formatted_address,
+                opening_hours: response.opening_hours,
               })
               .returning();
           }
         });
       } else {
         // If place exists, ensure it's connected to the city
-        await insertLocatedIn({
-          placeId: place,
-          cityId: city,
-        });
+        await insertLocatedInRelation(neo4j, place, cityNode.id);
       }
     }
+
+    console.log(placesToInsert);
 
     // Create relationships between places with distances
     for (let i = 0; i < placesToInsert.length; i++) {
@@ -156,81 +155,37 @@ const createCircuit = authenticatedAction.create(
         const destination = placesToInsert[j];
 
         // Check if relationship already exists
-        const existingRelation = await getConnectsTo({
+        const existingRelation = await getConnectsToRelation(
+          neo4j,
           origin,
-          destination,
-        });
+          destination
+        );
 
-        if (!existingRelation.length) {
-          const calculateDistance = async (
-            origin: string,
-            destination: string
-          ) => {
-            // Get place details for both points to extract coordinates
-            const originResponse = await client.placeDetails({
-              params: {
-                place_id: origin,
-                key: process.env.GOOGLE_MAPS_API_KEY!,
-              },
-            });
-
-            const destResponse = await client.placeDetails({
-              params: {
-                place_id: destination,
-                key: process.env.GOOGLE_MAPS_API_KEY!,
-              },
-            });
-
-            const originLat = originResponse.data.result.geometry?.location.lat;
-            const originLng = originResponse.data.result.geometry?.location.lng;
-            const destLat = destResponse.data.result.geometry?.location.lat;
-            const destLng = destResponse.data.result.geometry?.location.lng;
-
-            // Calculate distance using Haversine formula
-            const R = 6371e3; // Earth's radius in meters
-            const φ1 = ((originLat || 0) * Math.PI) / 180;
-            const φ2 = ((destLat || 0) * Math.PI) / 180;
-            const Δφ = (((destLat || 0) - (originLat || 0)) * Math.PI) / 180;
-            const Δλ = (((destLng || 0) - (originLng || 0)) * Math.PI) / 180;
-
-            const a =
-              Math.sin(Δφ / 2) * Math.sin(Δφ / 2) +
-              Math.cos(φ1) * Math.cos(φ2) * Math.sin(Δλ / 2) * Math.sin(Δλ / 2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-
-            const distance = R * c; // distance in meters
-
-            // Estimate duration based on walking speed (5 km/h = ~1.4 m/s)
-            const walkingSpeedMps = 1.4; // meters per second
-            const duration = distance / walkingSpeedMps;
-
-            return {
-              distance: { value: Math.round(distance) },
-              duration: { value: Math.round(duration) },
-            };
-          };
-
-          // Use real distance calculation
-          const element = await calculateDistance(origin, destination);
+        if (!existingRelation) {
+          const element = await calculateDistance(origin, destination, neo4j);
           const distance = element.distance.value;
           const duration = element.duration.value;
 
           // Create bidirectional relationships with distance and duration
-          await insertConnectsTo({
+          await insertBidirectionalConnectsToRelation(
+            neo4j,
             origin,
             destination,
             distance,
-            duration,
-          });
+            duration
+          );
         }
       }
     }
 
+
     const paths = await getShortestPath([startingPlace, ...places]);
 
     let circuitId = 0;
-    let estimatedDuration = paths.reduce((acc, path) => acc + path.duration, 0);
-    let distance = Number.parseFloat(
+    let estimatedDuration = Math.floor(
+      paths.reduce((acc, path) => acc + path.duration, 0)
+    );
+    let distance = parseFloat(
       paths.reduce((acc, path) => acc + path.distance, 0).toString()
     ).toFixed(2);
     await db.transaction(async (tx) => {
@@ -242,23 +197,22 @@ const createCircuit = authenticatedAction.create(
           city_id: cityId,
           creator_id: userId,
           is_public: isPublic,
-          distance,
+          distance: distance,
           estimated_duration: estimatedDuration,
         })
         .returning();
-      console.log("circuitRecord", circuitRecord);
 
-      let price: string | null = null;
+      let price = null;
+
       if (guideId) {
-        const [guide] = await tx
+        const [guideRecord] = await tx
           .select()
           .from(guide_profiles)
           .where(eq(guide_profiles.id, guideId));
-        if (guide && guide.price_per_hour) {
-          price = (
-            Number(guide.price_per_hour) * (estimatedDuration / 60)
-          ).toFixed(2);
-        }
+        price = (
+          Number(guideRecord.price_per_hour!) * (estimatedDuration / 60)
+
+        ).toFixed(2);
       }
 
       await tx.insert(bookings).values({
@@ -269,7 +223,7 @@ const createCircuit = authenticatedAction.create(
         guide_id: guideId,
         status: "pending",
       });
-      console.log("booking");
+
       circuitId = circuitRecord.id;
     });
 
@@ -317,91 +271,178 @@ type PathSegment = {
   nextLng?: number;
 };
 
+const getCityFromNeo4j = async (cityId: string, neo4j: Neo4jGraph) => {
+  const result = await neo4j.query(
+    `MATCH (city:City {id: $cityId}) RETURN city`,
+    {
+      cityId,
+    }
+  );
+
+  if (result.length === 0) {
+    return null;
+  }
+  return result[0].city;
+};
+
+const getPlaceFromNeo4j = async (placeId: string, neo4j: Neo4jGraph) => {
+  const result = await neo4j.query(
+    `MATCH (place:Place {id: $placeId}) RETURN place`,
+    {
+      placeId,
+    }
+  );
+  if (result.length === 0) {
+    return null;
+  }
+  return result[0].place;
+};
+
+const insertCityInNeo4j = async (
+  neo4j: Neo4jGraph,
+  city: string,
+  name: string,
+  country: string,
+  latitude: number,
+  longitude: number
+) => {
+  const result = await neo4j.query(
+    `CREATE (city:City {id: $city, name: $name, country: $country, latitude: $latitude, longitude: $longitude}) RETURN city`,
+    {
+      city,
+      name,
+      country,
+      latitude,
+      longitude,
+    }
+  );
+  return result[0];
+};
+
+const insertLocatedInRelation = async (
+  neo4j: Neo4jGraph,
+  placeId: string,
+  cityId: string
+) => {
+  const result = await neo4j.query(
+    ` MATCH (p:Place {id: $placeId})
+      MATCH (c:City {id: $cityId})
+      MERGE (p)-[:LOCATED_IN]->(c)`,
+    { placeId, cityId }
+  );
+};
+const insertPlaceInNeo4j = async (
+  neo4j: Neo4jGraph,
+  placeId: string,
+  name: string,
+  latitude: number,
+  longitude: number,
+  cityId: string
+) => {
+  await neo4j.query(
+    `CREATE (p:Place {id: $placeId, name: $name, latitude: $latitude, longitude: $longitude, city: $cityId}) RETURN p`,
+    { placeId, name, latitude, longitude, cityId }
+  );
+};
+
+const getConnectsToRelation = async (
+  neo4j: Neo4jGraph,
+  origin: string,
+  destination: string
+) => {
+  const result = await neo4j.query(
+    ` MATCH (p1:Place {id: $origin})-[r:CONNECTS_TO]-(p2:Place {id: $destination})
+      RETURN r`,
+    { origin, destination }
+  );
+  return result[0];
+};
+
+const getPlaceInfosFromGoogleMaps = async (client: Client, placeId: string) => {
+  const response = await client.placeDetails({
+    params: { place_id: placeId, key: process.env.GOOGLE_MAPS_API_KEY! },
+  });
+  return response.data.result;
+};
+
+const insertBidirectionalConnectsToRelation = async (
+  neo4j: Neo4jGraph,
+  origin: string,
+  destination: string,
+  distance: number,
+  duration: number
+) => {
+  await neo4j.query(
+    `
+    MATCH (p1:Place {id: $origin})
+    MATCH (p2:Place {id: $destination})
+    MERGE (p1)-[:CONNECTS_TO {distance: $distance, duration: $duration}]->(p2)
+    MERGE (p2)-[:CONNECTS_TO {distance: $distance, duration: $duration}]->(p1)
+    `,
+    { origin, destination, distance, duration }
+  );
+};
+
+const calculateDistance = async (
+  origin: string,
+  destination: string,
+  neo4j: Neo4jGraph
+) => {
+  const originNode = await getPlaceFromNeo4j(origin, neo4j);
+  const destinationNode = await getPlaceFromNeo4j(destination, neo4j);
+  // Get place details for both points to extract coordinates
+  const originCoordicates = `${originNode.longitude},${originNode.latitude}`;
+  const destinationCoordinates = `${destinationNode.longitude},${destinationNode.latitude}`;
+  const response = await fetch(
+    `https://api.openrouteservice.org/v2/directions/driving-car?api_key=${process.env.OPEN_ROUTE_API_KEY}&start=${originCoordicates}&end=${destinationCoordinates}`,
+    {
+      method: "GET",
+    }
+  );
+
+  const data = await response.json();
+
+  // consoleLogger(data);
+
+  const distance = data.features[0].properties.segments[0].distance as number;
+  const duration = data.features[0].properties.segments[0].duration as number;
+
+  return {
+    distance: { value: distance },
+    duration: { value: duration },
+  };
+};
+
 const getShortestPath = async (placesIds: string[]) => {
   const neo4j = await initializeNeo4j();
 
   const result = await neo4j.query(
     `
-// Input: $placesIds (list of string IDs)
+WITH $placesIds as ids
+MATCH (places:Place)
+WHERE places.id IN ids
+WITH places, ids
+ORDER BY CASE places.id WHEN ids[0] THEN 0 ELSE 1 END, places.id
 
-// Stage 0: Handle cases with less than 2 places directly.
-WITH $placesIds AS p_ids
-WHERE size(p_ids) >= 2 // Proceed only if there are at least two places to form a circuit segment.
-
-// Stage 1: Get node objects and define start and intermediates
-MATCH (n:Place) WHERE n.id IN p_ids
-WITH p_ids, collect(n) AS all_nodes_obj_unordered
-// Create an ordered list of node objects based on p_ids to correctly identify startNode
-WITH p_ids, [id IN p_ids | [node_obj IN all_nodes_obj_unordered WHERE node_obj.id = id][0]] AS all_nodes_obj_ordered
-WITH all_nodes_obj_ordered[0] AS startNodeObj, all_nodes_obj_ordered[1..] AS intermediateNodeObjsList
-
-// Stage 2: Find the optimal sequence of intermediate nodes + form the full tour
-// This subquery finds the sequence of node *objects* for the optimal tour
-CALL {
-    WITH startNodeObj, intermediateNodeObjsList
-    // If no intermediate nodes, tour is start -> start. Sequence: [startNodeObj, startNodeObj]
-    WHEN size(intermediateNodeObjsList) = 0 THEN
-        RETURN [startNodeObj, startNodeObj] AS optimal_tour_node_objects, 0.0 AS min_total_duration
-    ELSE
-        // Generate permutations of intermediate node *objects*
-        CALL apoc.coll.permutations(intermediateNodeObjsList) YIELD value AS permuted_intermediate_node_objects
-        // Construct the full tour sequence of node objects for this permutation
-        WITH startNodeObj, [startNodeObj] + permuted_intermediate_node_objects + [startNodeObj] AS current_tour_node_objects
-        
-        // Calculate total duration for this current_tour_node_objects using Dijkstra for each segment
-        CALL {
-            WITH current_tour_node_objects
-            UNWIND range(0, size(current_tour_node_objects) - 2) AS i
-            WITH current_tour_node_objects[i] AS u_node, current_tour_node_objects[i+1] AS v_node
-            // Use Dijkstra to find the shortest path based on 'duration' for the segment u_node -> v_node
-            CALL apoc.algo.dijkstra(u_node, v_node, 'CONNECTS_TO', 'duration') YIELD weight AS segment_duration
-            // Ensure path exists for this segment
-            WHERE segment_duration IS NOT NULL AND segment_duration >= 0
-            RETURN sum(segment_duration) AS tour_total_duration_for_permutation
-        }
-        // Filter out permutations that might lead to non-existent paths (if tour_total_duration_for_permutation is null)
-        WHERE tour_total_duration_for_permutation IS NOT NULL
-        RETURN current_tour_node_objects, tour_total_duration_for_permutation
-        ORDER BY tour_total_duration_for_permutation ASC
-        LIMIT 1
-        // Returns: optimal_tour_node_objects (list of node objects), min_total_duration (total duration)
-}
-// optimal_tour_node_objects is the list of actual node objects in the optimal tour order
-
-// Stage 3: Deconstruct the optimal tour into detailed path segments
-// Unwind each leg of the optimal tour (e.g., A->B, B->C, C->A)
-UNWIND range(0, size(optimal_tour_node_objects) - 2) AS i_tour_leg
-WITH optimal_tour_node_objects[i_tour_leg] AS major_leg_start_node,
-     optimal_tour_node_objects[i_tour_leg+1] AS major_leg_end_node
-
-// For each major leg (e.g., A to B), find its detailed shortest path using Dijkstra (again, could be multi-hop A-X-Y-B)
-CALL apoc.algo.dijkstra(major_leg_start_node, major_leg_end_node, 'CONNECTS_TO', 'duration') YIELD path AS detailed_segment_path
-// Filter out if no path exists for a leg (should not happen if Stage 2 worked correctly)
-WHERE detailed_segment_path IS NOT NULL
-
-// Extract the sequence of nodes in this detailed_segment_path
-WITH nodes(detailed_segment_path) AS route_nodes_for_detailed_segment
-WHERE size(route_nodes_for_detailed_segment) >= 2 // Ensure the path has at least one hop
-
-// Unwind the hops within the detailed_segment_path (e.g., A->X, X->Y, Y->B)
-UNWIND range(0, size(route_nodes_for_detailed_segment) - 2) AS i_sub_hop
-WITH route_nodes_for_detailed_segment[i_sub_hop] AS current_hop_node,
-     route_nodes_for_detailed_segment[i_sub_hop+1] AS next_hop_node
-     
-// Get the direct :CONNECTS_TO relationship for this specific hop
-MATCH (current_hop_node)-[r_direct:CONNECTS_TO]->(next_hop_node)
-
-RETURN
-  current_hop_node.name AS currentStop,
-  current_hop_node.id AS currentId,
-  next_hop_node.name AS nextStop,
-  next_hop_node.id AS nextId,
-  r_direct.distance AS distance,
-  r_direct.duration AS duration,
-  current_hop_node.latitude AS currentLat,
-  current_hop_node.longitude AS currentLng,
-  next_hop_node.latitude AS nextLat,
-  next_hop_node.longitude AS nextLng
+WITH collect(places) as orderedPlaces
+UNWIND range(0, size(orderedPlaces)-2) as i
+WITH orderedPlaces[i] as current, orderedPlaces[i+1] as next
+MATCH path = shortestPath((current)-[:CONNECTS_TO*]->(next))
+WITH [p in nodes(path)] as route
+UNWIND range(0, size(route)-2) as i
+WITH route[i] as current, route[i+1] as next
+MATCH (current)-[r:CONNECTS_TO]->(next)
+RETURN 
+  current.name as currentStop,
+  current.id as currentId,
+  next.name as nextStop,
+  next.id as nextId,
+  r.distance as distance,
+  r.duration as duration,
+  current.latitude as currentLat,
+  current.longitude as currentLng,
+  next.latitude as nextLat,
+  next.longitude as nextLng
  `,
     { placesIds } // Pass the original placesIds array as a parameter
   );

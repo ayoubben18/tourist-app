@@ -769,6 +769,7 @@ export const circuits = pgTable("circuits", {
   is_public: boolean("is_public").default(true),
   rating: decimal("rating", { precision: 3, scale: 2 }).default("0"),
   number_of_reviews: integer("number_of_reviews").default(0),
+  route_steps: jsonb("route_steps"),
 });
 
 

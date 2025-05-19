@@ -211,6 +211,13 @@
       "when": 1740178788696,
       "tag": "0029_brown_hemingway",
       "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1747666688243,
+      "tag": "0030_flat_steel_serpent",
+      "breakpoints": true
     }
   ]
 }
