@@ -19,7 +19,8 @@ import useQueryCacheKeys from "@/utils/use-query-cache-keys";
 import {
   getFavoriteCircuits,
   getLikedCircuits,
-  getMyCircuits,
+  getUpcomingTrips,
+  getCompletedTrips,
 } from "@/services/database";
 import { useRouter } from "next/navigation";
 import { CircuitCard } from "@/components/(public)/public-circuits";
@@ -152,9 +153,9 @@ export function TouristProfile() {
       },
     });
 
-  const { data: myCircuits, isPending: isFetchingMyCircuits } = useQuery({
-    queryKey: useQueryCacheKeys.myCircuits(userInfo?.id || ""),
-    queryFn: () => getMyCircuits(),
+  const { data: upcomingTrips, isPending: isFetchingUpcomingTrips } = useQuery({
+    queryKey: useQueryCacheKeys.upcomingTrips(userInfo?.id || ""),
+    queryFn: () => getUpcomingTrips(),
     enabled: !!userInfo,
   });
   const { data: likedCircuits, isPending: isFetchingLikedCircuits } = useQuery({
@@ -167,6 +168,12 @@ export function TouristProfile() {
     queryFn: () => getFavoriteCircuits(),
     enabled: !!userInfo,
   });
+  const { data: completedTrips, isPending: isFetchingCompletedTrips } =
+    useQuery({
+      queryKey: useQueryCacheKeys.completedTrips(userInfo?.id || ""),
+      queryFn: () => getCompletedTrips(),
+      enabled: !!userInfo,
+    });
 
   // Update profile state when userInfo changes
   useEffect(() => {
@@ -224,9 +231,10 @@ export function TouristProfile() {
 
   if (
     isUserInfoLoading ||
-    isFetchingMyCircuits ||
+    isFetchingUpcomingTrips ||
     isFetchingLikedCircuits ||
-    isFetchingFavorites
+    isFetchingFavorites ||
+    isFetchingCompletedTrips
   ) {
     return <ProfileSkeleton />;
   }
@@ -349,17 +357,18 @@ export function TouristProfile() {
 
       <Card className="overflow-hidden border-none shadow-md">
         <CardContent className="p-6">
-          <Tabs defaultValue="circuits" className="w-full">
+          <Tabs defaultValue="upcoming" className="w-full">
             <TabsList className="px-4 py-2 mb-6 max-w-fit flex mx-auto bg-gray-100 rounded-full">
-              <TabsTrigger value="circuits">My Circuits</TabsTrigger>
+              <TabsTrigger value="upcoming">Upcoming Trips</TabsTrigger>
               <TabsTrigger value="likes">Likes</TabsTrigger>
               <TabsTrigger value="favorites">Favorites</TabsTrigger>
+              <TabsTrigger value="completed">Completed Trips</TabsTrigger>
             </TabsList>
 
-            <TabsContent value="circuits" className="mt-6">
-              {myCircuits && myCircuits.length > 0 ? (
+            <TabsContent value="upcoming">
+              {upcomingTrips && upcomingTrips.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {myCircuits.map((circuit) => (
+                  {upcomingTrips.map((circuit) => (
                     <CircuitCard key={circuit.id} circuit={circuit} />
                   ))}
                 </div>
@@ -378,15 +387,13 @@ export function TouristProfile() {
                       strokeLinejoin="round"
                       className="text-gray-400"
                     >
-                      <circle cx="12" cy="12" r="10" />
-                      <line x1="12" y1="8" x2="12" y2="12" />
-                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
                     </svg>
                     <p className="text-gray-500 font-medium">
-                      No circuits created yet
+                      No upcoming trips planned
                     </p>
                     <Button variant="outline" className="rounded-full mt-2">
-                      Create Your First Circuit
+                      Explore Circuits
                     </Button>
                   </div>
                 </div>
@@ -457,6 +464,41 @@ export function TouristProfile() {
                     </p>
                     <Button variant="outline" className="rounded-full mt-2">
                       Browse Popular Circuits
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </TabsContent>
+
+            <TabsContent value="completed">
+              {completedTrips && completedTrips.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {completedTrips.map((circuit) => (
+                    <CircuitCard key={circuit.id} circuit={circuit} />
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center text-muted-foreground py-16 bg-gray-50 rounded-lg">
+                  <div className="flex flex-col items-center space-y-4">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      width="48"
+                      height="48"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="text-gray-400"
+                    >
+                      <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
+                    </svg>
+                    <p className="text-gray-500 font-medium">
+                      No completed trips yet
+                    </p>
+                    <Button variant="outline" className="rounded-full mt-2">
+                      Explore Circuits
                     </Button>
                   </div>
                 </div>
