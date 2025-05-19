@@ -41,6 +41,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import Comments from "@/components/(public)/public-circuits/circuit-comments";
 import StarRating from "@/components/shared/StarRating";
 import AddCircuitReviewForm from "@/components/(public)/public-circuits/circuit-review-form";
+import { BookTripDialog } from "@/components/(public)/public-circuits/book-trip-dialog";
 
 // Dynamically import the Map component with SSR disabled
 const Map = dynamic(() => import("@/components/shared/Maps"), {
@@ -112,7 +113,6 @@ export default function App() {
     favoriteData?.isFavorite ?? false,
     (_, newFavorite: boolean) => newFavorite
   );
-
 
   // const likeData = { isLiked: false, like_id: null}
   // const isLikedLoading = false
@@ -414,9 +414,10 @@ export default function App() {
         </div>
 
         <div className="space-y-4">
-          <button className="w-full bg-primary text-primary-foreground py-3 rounded-lg font-medium">
-            Take this Trip
-          </button>
+          <BookTripDialog
+            circuitId={Number(circuit_id)}
+            circuitDuration={circuitWithPOI.estimated_duration || 0}
+          />
           <div className="flex gap-4">
             {/* Like Button */}
             <Button
@@ -440,9 +441,7 @@ export default function App() {
               className="flex-1 flex items-center justify-center gap-2"
               onClick={handleSave}
               disabled={
-                isAuthenticated?.isAuthenticated
-                  ? isFavoritedLoading
-                  : false
+                isAuthenticated?.isAuthenticated ? isFavoritedLoading : false
               }
             >
               <Bookmark
