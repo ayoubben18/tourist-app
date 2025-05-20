@@ -1,6 +1,9 @@
 import { CardsGrid } from "@/components/(public)/public-circuits/cards-grid";
 import CreateCircuitButton from "@/components/(public)/public-circuits/create-circuit-button";
 import { getPublicCircuits } from "@/services/database/circuits";
+
+export const dynamic = "force-dynamic";
+
 export default async function App() {
   const data = await getPublicCircuits({});
   return (
