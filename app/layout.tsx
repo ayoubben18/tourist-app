@@ -7,6 +7,7 @@ import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { Navbar } from "@/components/(public)/home-page/NavBar";
 import Footer from "@/components/shared/footer";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
+import { Suspense } from "react";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,19 +35,21 @@ export default function RootLayout({
         <body
           className={`${geistSans.variable} ${geistMono.variable} container mx-auto `}
         >
+          <Toaster
+            richColors
+            position="top-right"
+            duration={2000}
+            theme="light"
+            visibleToasts={1}
+          />
           <NuqsAdapter>
-            <Toaster
-              richColors
-              position="top-right"
-              duration={2000}
-              theme="light"
-              visibleToasts={1}
-            />
-            <Navbar />
-            {children}
-            <Footer />
-            <ReactQueryDevtools initialIsOpen={false} />
+            <Suspense>
+              <Navbar />
+              {children}
+              <Footer />
+            </Suspense>
           </NuqsAdapter>
+          <ReactQueryDevtools initialIsOpen={false} />
         </body>
       </html>
     </QueryProvider>
