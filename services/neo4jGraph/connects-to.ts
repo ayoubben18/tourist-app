@@ -43,7 +43,7 @@ const getConnectsTo = async (props: GetConnectsToProps) => {
         props
     )
 
-    return result
+    return result.length > 0 ? result[0].r : null;
 }
 
 export { insertConnectsTo, getConnectsTo }

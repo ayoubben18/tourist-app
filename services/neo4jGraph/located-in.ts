@@ -18,5 +18,5 @@ const insertLocatedIn = async (props: InsertLocatedInProps) => {
         { place: props.placeId, city: props.cityId }
     )
 }
-
 export { insertLocatedIn }
+

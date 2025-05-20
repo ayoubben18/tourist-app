@@ -8,7 +8,7 @@ const getNeo4jPlace = async (placeId: string) => {
         { placeId }
     );
 
-    return result
+    return result.length > 0 ? result[0].p : null;
 }
 
 
@@ -21,7 +21,7 @@ type InsertPlaceProps = {
 }
 const insertNeo4jPlace = async (props: InsertPlaceProps) => {
     const neo4j = await initializeNeo4j();
-    await neo4j.query(
+    const result = await neo4j.query(
         `
             CREATE(p: Place { id: $place, name: $name, latitude: $latitude, longitude: $longitude })
             WITH p
@@ -37,6 +37,7 @@ const insertNeo4jPlace = async (props: InsertPlaceProps) => {
             longitude: props.longitude,
         }
     );
+    return result.length > 0 ? result[0].p : null;
 }
 
 export { getNeo4jPlace, insertNeo4jPlace }

@@ -1,45 +1,53 @@
 import { relations } from "drizzle-orm/relations";
-import { sessionsInAuth, refresh_tokensInAuth, bucketsInStorage, s3_multipart_uploads_partsInStorage, s3_multipart_uploadsInStorage, flow_stateInAuth, saml_relay_statesInAuth, sso_providersInAuth, usersInAuth, sso_domainsInAuth, mfa_amr_claimsInAuth, saml_providersInAuth, identitiesInAuth, one_time_tokensInAuth, mfa_factorsInAuth, mfa_challengesInAuth, objectsInStorage } from "./schema";
-
-export const refresh_tokensInAuthRelations = relations(refresh_tokensInAuth, ({one}) => ({
-	sessionsInAuth: one(sessionsInAuth, {
-		fields: [refresh_tokensInAuth.session_id],
-		references: [sessionsInAuth.id]
-	}),
-}));
+import { usersInAuth, sessionsInAuth, sso_providersInAuth, sso_domainsInAuth, mfa_amr_claimsInAuth, bucketsInStorage, objectsInStorage, flow_stateInAuth, saml_relay_statesInAuth, refresh_tokensInAuth, saml_providersInAuth, identitiesInAuth, one_time_tokensInAuth, mfa_factorsInAuth, mfa_challengesInAuth, s3_multipart_uploads_partsInStorage, s3_multipart_uploadsInStorage } from "./schema";
 
 export const sessionsInAuthRelations = relations(sessionsInAuth, ({one, many}) => ({
-	refresh_tokensInAuths: many(refresh_tokensInAuth),
 	usersInAuth: one(usersInAuth, {
 		fields: [sessionsInAuth.user_id],
 		references: [usersInAuth.id]
 	}),
 	mfa_amr_claimsInAuths: many(mfa_amr_claimsInAuth),
+	refresh_tokensInAuths: many(refresh_tokensInAuth),
 }));
 
-export const s3_multipart_uploads_partsInStorageRelations = relations(s3_multipart_uploads_partsInStorage, ({one}) => ({
-	bucketsInStorage: one(bucketsInStorage, {
-		fields: [s3_multipart_uploads_partsInStorage.bucket_id],
-		references: [bucketsInStorage.id]
+export const usersInAuthRelations = relations(usersInAuth, ({many}) => ({
+	sessionsInAuths: many(sessionsInAuth),
+	identitiesInAuths: many(identitiesInAuth),
+	one_time_tokensInAuths: many(one_time_tokensInAuth),
+	mfa_factorsInAuths: many(mfa_factorsInAuth),
+}));
+
+export const sso_domainsInAuthRelations = relations(sso_domainsInAuth, ({one}) => ({
+	sso_providersInAuth: one(sso_providersInAuth, {
+		fields: [sso_domainsInAuth.sso_provider_id],
+		references: [sso_providersInAuth.id]
 	}),
-	s3_multipart_uploadsInStorage: one(s3_multipart_uploadsInStorage, {
-		fields: [s3_multipart_uploads_partsInStorage.upload_id],
-		references: [s3_multipart_uploadsInStorage.id]
+}));
+
+export const sso_providersInAuthRelations = relations(sso_providersInAuth, ({many}) => ({
+	sso_domainsInAuths: many(sso_domainsInAuth),
+	saml_relay_statesInAuths: many(saml_relay_statesInAuth),
+	saml_providersInAuths: many(saml_providersInAuth),
+}));
+
+export const mfa_amr_claimsInAuthRelations = relations(mfa_amr_claimsInAuth, ({one}) => ({
+	sessionsInAuth: one(sessionsInAuth, {
+		fields: [mfa_amr_claimsInAuth.session_id],
+		references: [sessionsInAuth.id]
+	}),
+}));
+
+export const objectsInStorageRelations = relations(objectsInStorage, ({one}) => ({
+	bucketsInStorage: one(bucketsInStorage, {
+		fields: [objectsInStorage.bucket_id],
+		references: [bucketsInStorage.id]
 	}),
 }));
 
 export const bucketsInStorageRelations = relations(bucketsInStorage, ({many}) => ({
-	s3_multipart_uploads_partsInStorages: many(s3_multipart_uploads_partsInStorage),
 	objectsInStorages: many(objectsInStorage),
-	s3_multipart_uploadsInStorages: many(s3_multipart_uploadsInStorage),
-}));
-
-export const s3_multipart_uploadsInStorageRelations = relations(s3_multipart_uploadsInStorage, ({one, many}) => ({
 	s3_multipart_uploads_partsInStorages: many(s3_multipart_uploads_partsInStorage),
-	bucketsInStorage: one(bucketsInStorage, {
-		fields: [s3_multipart_uploadsInStorage.bucket_id],
-		references: [bucketsInStorage.id]
-	}),
+	s3_multipart_uploadsInStorages: many(s3_multipart_uploadsInStorage),
 }));
 
 export const saml_relay_statesInAuthRelations = relations(saml_relay_statesInAuth, ({one}) => ({
@@ -57,29 +65,9 @@ export const flow_stateInAuthRelations = relations(flow_stateInAuth, ({many}) =>
 	saml_relay_statesInAuths: many(saml_relay_statesInAuth),
 }));
 
-export const sso_providersInAuthRelations = relations(sso_providersInAuth, ({many}) => ({
-	saml_relay_statesInAuths: many(saml_relay_statesInAuth),
-	sso_domainsInAuths: many(sso_domainsInAuth),
-	saml_providersInAuths: many(saml_providersInAuth),
-}));
-
-export const usersInAuthRelations = relations(usersInAuth, ({many}) => ({
-	sessionsInAuths: many(sessionsInAuth),
-	identitiesInAuths: many(identitiesInAuth),
-	one_time_tokensInAuths: many(one_time_tokensInAuth),
-	mfa_factorsInAuths: many(mfa_factorsInAuth),
-}));
-
-export const sso_domainsInAuthRelations = relations(sso_domainsInAuth, ({one}) => ({
-	sso_providersInAuth: one(sso_providersInAuth, {
-		fields: [sso_domainsInAuth.sso_provider_id],
-		references: [sso_providersInAuth.id]
-	}),
-}));
-
-export const mfa_amr_claimsInAuthRelations = relations(mfa_amr_claimsInAuth, ({one}) => ({
+export const refresh_tokensInAuthRelations = relations(refresh_tokensInAuth, ({one}) => ({
 	sessionsInAuth: one(sessionsInAuth, {
-		fields: [mfa_amr_claimsInAuth.session_id],
+		fields: [refresh_tokensInAuth.session_id],
 		references: [sessionsInAuth.id]
 	}),
 }));
@@ -120,9 +108,21 @@ export const mfa_challengesInAuthRelations = relations(mfa_challengesInAuth, ({o
 	}),
 }));
 
-export const objectsInStorageRelations = relations(objectsInStorage, ({one}) => ({
+export const s3_multipart_uploads_partsInStorageRelations = relations(s3_multipart_uploads_partsInStorage, ({one}) => ({
 	bucketsInStorage: one(bucketsInStorage, {
-		fields: [objectsInStorage.bucket_id],
+		fields: [s3_multipart_uploads_partsInStorage.bucket_id],
+		references: [bucketsInStorage.id]
+	}),
+	s3_multipart_uploadsInStorage: one(s3_multipart_uploadsInStorage, {
+		fields: [s3_multipart_uploads_partsInStorage.upload_id],
+		references: [s3_multipart_uploadsInStorage.id]
+	}),
+}));
+
+export const s3_multipart_uploadsInStorageRelations = relations(s3_multipart_uploadsInStorage, ({one, many}) => ({
+	s3_multipart_uploads_partsInStorages: many(s3_multipart_uploads_partsInStorage),
+	bucketsInStorage: one(bucketsInStorage, {
+		fields: [s3_multipart_uploadsInStorage.bucket_id],
 		references: [bucketsInStorage.id]
 	}),
 }));

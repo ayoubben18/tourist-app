@@ -1,1 +1,0 @@
-ALTER TABLE "circuits" ADD COLUMN "number_of_reviews" integer DEFAULT 0;

@@ -1,10 +1,5 @@
 "use server";
-import { Client } from "@googlemaps/google-maps-services-js";
-import { createCircuitSchema } from "@/utils/schemas";
-import { authenticatedAction, consoleLogger } from "../server-only";
-import { initializeNeo4j } from "@/utils/server-clients";
 import { db } from "@/db";
-import { eq } from "drizzle-orm";
 import {
   bookings,
   circuit_points,
@@ -13,8 +8,18 @@ import {
   guide_profiles,
   points_of_interest,
 } from "@/db/migrations/schema";
+import { createCircuitSchema } from "@/utils/schemas";
+import { initializeNeo4j } from "@/utils/server-clients";
+import { Client } from "@googlemaps/google-maps-services-js";
 import { Neo4jGraph } from "@langchain/community/graphs/neo4j_graph";
-import { inspect } from "util";
+import { eq } from "drizzle-orm";
+import { authenticatedAction } from "../server-only";
+import { getCity, insertNeo4jCity } from "./cities";
+import { getConnectsTo, insertConnectsTo } from "./connects-to";
+import { insertLocatedIn } from "./located-in";
+import { getNeo4jPlace, insertNeo4jPlace } from "./places";
+
+
 const createCircuit = authenticatedAction.create(
   createCircuitSchema,
   async (props, { userId }) => {
@@ -33,19 +38,18 @@ const createCircuit = authenticatedAction.create(
     const client = new Client();
 
     // Check if city exists, if not create it
-    let cityNode = await getCityFromNeo4j(city, neo4j);
+    let cityNode = await getCity(city);
 
     if (!cityNode) {
       const response = await getPlaceInfosFromGoogleMaps(client, city);
 
-      cityNode = await insertCityInNeo4j(
-        neo4j,
+      cityNode = await insertNeo4jCity({
         city,
-        response.name!,
-        response.address_components?.[0]?.short_name!,
-        response.geometry?.location.lat!,
-        response.geometry?.location.lng!
-      );
+        name: response.name!,
+        country: response.address_components?.[0]?.short_name!,
+        latitude: response.geometry?.location.lat!,
+        longitude: response.geometry?.location.lng!
+      });
 
       await db.transaction(async (tx) => {
         const [cityRecord] = await tx
@@ -53,6 +57,7 @@ const createCircuit = authenticatedAction.create(
           .from(cities)
           .where(eq(cities.google_place_id, city));
 
+        console.log("cityRecord", cityRecord);
         if (!cityRecord) {
           // let imageUrl = "";
           // if (response.photos) {
@@ -97,20 +102,23 @@ const createCircuit = authenticatedAction.create(
 
     // Create places if they don't exist and link them to the city
     for (const place of placesToInsert) {
-      let placeNode = await getPlaceFromNeo4j(place, neo4j);
+      let placeNode = await getNeo4jPlace(place);
 
       if (!placeNode) {
         const response = await getPlaceInfosFromGoogleMaps(client, place);
 
-        await insertPlaceInNeo4j(
-          neo4j,
-          place,
-          response.name!,
-          response.geometry?.location.lat!,
-          response.geometry?.location.lng!,
-          cityNode.name
-        );
-        await insertLocatedInRelation(neo4j, place, cityNode.id);
+        await insertNeo4jPlace({
+          placeId: place,
+          name: response.name!,
+          latitude: response.geometry?.location.lat!,
+          longitude: response.geometry?.location.lng!,
+          cityId: cityNode.id
+        });
+
+        await insertLocatedIn({
+          placeId: place,
+          cityId: cityNode.id
+        });
 
         await db.transaction(async (tx) => {
           const [placeRecord] = await tx
@@ -142,7 +150,10 @@ const createCircuit = authenticatedAction.create(
         });
       } else {
         // If place exists, ensure it's connected to the city
-        await insertLocatedInRelation(neo4j, place, cityNode.id);
+        await insertLocatedIn({
+          placeId: place,
+          cityId: cityNode.id
+        });
       }
     }
 
@@ -157,11 +168,10 @@ const createCircuit = authenticatedAction.create(
         const destination = placesToInsert[j];
 
         // Check if relationship already exists
-        const existingRelation = await getConnectsToRelation(
-          neo4j,
+        const existingRelation = await getConnectsTo({
           origin,
           destination
-        );
+        });
 
         if (!existingRelation) {
           const element = await calculateDistance(origin, destination, neo4j);
@@ -170,20 +180,22 @@ const createCircuit = authenticatedAction.create(
 
           circuitSteps.steps_data.push(element.steps);
           // Create bidirectional relationships with distance and duration
-          await insertBidirectionalConnectsToRelation(
-            neo4j,
+          await insertConnectsTo({
             origin,
             destination,
             distance,
             duration
-          );
+          });
         }
       }
     }
 
 
 
+    console.log("startingPlace", startingPlace);
+    console.log("places", places);
     const paths = await getShortestPath([startingPlace, ...places]);
+    console.log("paths", paths);
 
     let circuitId = 0;
     let estimatedDuration = Math.floor(
@@ -276,92 +288,6 @@ type PathSegment = {
   nextLng?: number;
 };
 
-const getCityFromNeo4j = async (cityId: string, neo4j: Neo4jGraph) => {
-  const result = await neo4j.query(
-    `MATCH (city:City {id: $cityId}) RETURN city`,
-    {
-      cityId,
-    }
-  );
-
-  if (result.length === 0) {
-    return null;
-  }
-  return result[0].city;
-};
-
-const getPlaceFromNeo4j = async (placeId: string, neo4j: Neo4jGraph) => {
-  const result = await neo4j.query(
-    `MATCH (place:Place {id: $placeId}) RETURN place`,
-    {
-      placeId,
-    }
-  );
-  if (result.length === 0) {
-    return null;
-  }
-  return result[0].place;
-};
-
-const insertCityInNeo4j = async (
-  neo4j: Neo4jGraph,
-  city: string,
-  name: string,
-  country: string,
-  latitude: number,
-  longitude: number
-) => {
-  const result = await neo4j.query(
-    `CREATE (city:City {id: $city, name: $name, country: $country, latitude: $latitude, longitude: $longitude}) RETURN city`,
-    {
-      city,
-      name,
-      country,
-      latitude,
-      longitude,
-    }
-  );
-  return result[0];
-};
-
-const insertLocatedInRelation = async (
-  neo4j: Neo4jGraph,
-  placeId: string,
-  cityId: string
-) => {
-  const result = await neo4j.query(
-    ` MATCH (p:Place {id: $placeId})
-      MATCH (c:City {id: $cityId})
-      MERGE (p)-[:LOCATED_IN]->(c)`,
-    { placeId, cityId }
-  );
-};
-const insertPlaceInNeo4j = async (
-  neo4j: Neo4jGraph,
-  placeId: string,
-  name: string,
-  latitude: number,
-  longitude: number,
-  cityId: string
-) => {
-  await neo4j.query(
-    `CREATE (p:Place {id: $placeId, name: $name, latitude: $latitude, longitude: $longitude, city: $cityId}) RETURN p`,
-    { placeId, name, latitude, longitude, cityId }
-  );
-};
-
-const getConnectsToRelation = async (
-  neo4j: Neo4jGraph,
-  origin: string,
-  destination: string
-) => {
-  const result = await neo4j.query(
-    ` MATCH (p1:Place {id: $origin})-[r:CONNECTS_TO]-(p2:Place {id: $destination})
-      RETURN r`,
-    { origin, destination }
-  );
-  return result[0];
-};
 
 const getPlaceInfosFromGoogleMaps = async (client: Client, placeId: string) => {
   const response = await client.placeDetails({
@@ -370,31 +296,13 @@ const getPlaceInfosFromGoogleMaps = async (client: Client, placeId: string) => {
   return response.data.result;
 };
 
-const insertBidirectionalConnectsToRelation = async (
-  neo4j: Neo4jGraph,
-  origin: string,
-  destination: string,
-  distance: number,
-  duration: number
-) => {
-  await neo4j.query(
-    `
-    MATCH (p1:Place {id: $origin})
-    MATCH (p2:Place {id: $destination})
-    MERGE (p1)-[:CONNECTS_TO {distance: $distance, duration: $duration}]->(p2)
-    MERGE (p2)-[:CONNECTS_TO {distance: $distance, duration: $duration}]->(p1)
-    `,
-    { origin, destination, distance, duration }
-  );
-};
-
 const calculateDistance = async (
   origin: string,
   destination: string,
   neo4j: Neo4jGraph
 ) => {
-  const originNode = await getPlaceFromNeo4j(origin, neo4j);
-  const destinationNode = await getPlaceFromNeo4j(destination, neo4j);
+  const originNode = await getNeo4jPlace(origin);
+  const destinationNode = await getNeo4jPlace(destination);
   // Get place details for both points to extract coordinates
   const originCoordicates = `${originNode.longitude},${originNode.latitude}`;
   const destinationCoordinates = `${destinationNode.longitude},${destinationNode.latitude}`;
@@ -422,36 +330,60 @@ const calculateDistance = async (
 const getShortestPath = async (placesIds: string[]) => {
   const neo4j = await initializeNeo4j();
 
+  // If placesIds is empty or has only one element, a "circuit" might be trivial or not what's expected.
+  // Adding a check here if needed, e.g., if placesIds.length < 2, return [] or handle appropriately.
+  if (placesIds.length === 0) {
+    return [];
+  }
+
+
   const result = await neo4j.query(
     `
-WITH $placesIds as ids
-MATCH (places:Place)
-WHERE places.id IN ids
-WITH places, ids
-ORDER BY CASE places.id WHEN ids[0] THEN 0 ELSE 1 END, places.id
+WITH $placesIds AS visit_sequence_ids
+// Create the full circuit sequence of node IDs, returning to the start
+// If only one placeId is given, circuit_node_ids will be [id, id]
+WITH visit_sequence_ids + [visit_sequence_ids[0]] AS circuit_node_ids
 
-WITH collect(places) as orderedPlaces
-UNWIND range(0, size(orderedPlaces)-2) as i
-WITH orderedPlaces[i] as current, orderedPlaces[i+1] as next
-MATCH path = shortestPath((current)-[:CONNECTS_TO*]->(next))
-WITH [p in nodes(path)] as route
-UNWIND range(0, size(route)-2) as i
-WITH route[i] as current, route[i+1] as next
-MATCH (current)-[r:CONNECTS_TO]->(next)
-RETURN 
-  current.name as currentStop,
-  current.id as currentId,
-  next.name as nextStop,
-  next.id as nextId,
-  r.distance as distance,
-  r.duration as duration,
-  current.latitude as currentLat,
-  current.longitude as currentLng,
-  next.latitude as nextLat,
-  next.longitude as nextLng
+// Iterate through the segments of the circuit (e.g., P0->P1, P1->P2, ..., Pn->P0)
+UNWIND range(0, size(circuit_node_ids) - 2) AS i
+WITH circuit_node_ids[i] AS current_stop_id, circuit_node_ids[i+1] AS next_stop_id, i AS segment_index
+
+// Match the actual nodes for the current segment of the tour
+MATCH (current_stop_node:Place {id: current_stop_id})
+MATCH (next_stop_node:Place {id: next_stop_id})
+
+// Find the shortest path for this specific segment of the tour
+MATCH path = shortestPath((current_stop_node)-[:CONNECTS_TO*]->(next_stop_node))
+
+// Deconstruct the found 'path' (which is a single path object for the segment)
+// into its constituent nodes. nodes(path) returns a list of nodes.
+WITH segment_index, [n IN nodes(path) | n] AS path_nodes_in_segment
+
+// Unwind the nodes within this segment's path to get pairs for direct relationships
+// e.g., if path_nodes_in_segment is [N1, N2, N3], this creates pairs (N1,N2) and (N2,N3)
+UNWIND range(0, size(path_nodes_in_segment) - 2) AS j
+WITH segment_index, j AS step_in_segment_index, path_nodes_in_segment[j] AS segment_step_start, path_nodes_in_segment[j+1] AS segment_step_end
+
+// Match the direct relationship (and its properties) between these consecutive nodes in the segment's path
+MATCH (segment_step_start)-[r:CONNECTS_TO]->(segment_step_end)
+
+RETURN
+  segment_step_start.name AS currentStop,
+  segment_step_start.id AS currentId,
+  segment_step_end.name AS nextStop,
+  segment_step_end.id AS nextId,
+  r.distance AS distance,
+  r.duration AS duration,
+  segment_step_start.latitude AS currentLat,
+  segment_step_start.longitude AS currentLng,
+  segment_step_end.latitude AS nextLat,
+  segment_step_end.longitude AS nextLng
+// Order the results by the tour segment, and then by the step within that segment's path
+ORDER BY segment_index, step_in_segment_index
  `,
     { placesIds } // Pass the original placesIds array as a parameter
   );
   return (result as unknown) as PathSegment[]; // Added 'unknown' to bypass strict type checking if needed, then cast
 };
 export { createCircuit };
+

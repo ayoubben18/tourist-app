@@ -50,8 +50,9 @@ const touristOnboarding = publicAction.create(
     var avatar_url: string | null = null;
 
     if (pfp) {
+
       const { data: pfp_data, error: pfp_error } = await supabase.storage
-        .from("profile_pictures")
+        .from("profile-pictures")
         .upload(tourist_id, pfp);
 
       if (pfp_error) {
@@ -60,7 +61,7 @@ const touristOnboarding = publicAction.create(
       }
 
       const { data: pfp_url } = await supabase.storage
-        .from("profile_pictures")
+        .from("profile-pictures")
         .getPublicUrl(pfp_data.path);
 
       avatar_url = pfp_url.publicUrl;
@@ -201,7 +202,7 @@ const signIn = publicAction.create(
   }
 );
 
-const signOut = publicAction.create(async ({}) => {
+const signOut = publicAction.create(async ({ }) => {
   const supabase = await createClient();
   await supabase.auth.signOut();
 });

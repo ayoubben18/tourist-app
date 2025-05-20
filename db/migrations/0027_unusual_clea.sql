@@ -1,1 +1,0 @@
-ALTER TABLE "guide_profiles" ADD COLUMN "cities" text[];

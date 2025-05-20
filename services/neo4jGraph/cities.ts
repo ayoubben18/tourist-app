@@ -25,6 +25,15 @@ const getAllCities =
     }
   };
 
+const getCity = async (city: string) => {
+  const neo4j = await initializeNeo4j();
+  const result = await neo4j.query(
+    `MATCH (c:City {id: $city}) RETURN c`,
+    { city }
+  );
+  return result.length > 0 ? result[0].c : null;
+}
+
 type InsertCityProps = {
   city: string;
   name?: string;
@@ -35,7 +44,7 @@ type InsertCityProps = {
 
 const insertNeo4jCity = async (props: InsertCityProps) => {
   const neo4j = await initializeNeo4j();
-  await neo4j.query(
+  const result = await neo4j.query(
     'CREATE (c:City {id: $city, name: $name, country: $country, latitude: $latitude, longitude: $longitude}) RETURN c',
     {
       city: props.city,
@@ -45,6 +54,7 @@ const insertNeo4jCity = async (props: InsertCityProps) => {
       longitude: props.longitude,
     }
   );
+  return result.length > 0 ? result[0].c : null;
 }
 
-export { getAllCities, insertNeo4jCity } 
+export { getAllCities, insertNeo4jCity, getCity } 

@@ -1,1 +1,0 @@
-ALTER TABLE "circuits" ADD COLUMN "route_steps" jsonb;

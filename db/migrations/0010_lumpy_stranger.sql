@@ -1,1 +1,0 @@
-ALTER TABLE "guide_profiles" DROP COLUMN "available_hours";

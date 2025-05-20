@@ -1,1 +1,0 @@
-ALTER TABLE "users_additional_info" ADD CONSTRAINT "fk_users_additional_info_id_fkey" FOREIGN KEY ("id") REFERENCES "auth"."users"("id") ON DELETE cascade ON UPDATE no action;
