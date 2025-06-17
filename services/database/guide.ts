@@ -123,8 +123,8 @@ const getGuides = publicAction.create(
       .innerJoin(
         users_additional_info,
         eq(guide_profiles.id, users_additional_info.id)
-      )
-      .where(whereClause);
+      ).
+      where(eq(guide_profiles.verification_status, 'approved'));
 
     return guides;
   }

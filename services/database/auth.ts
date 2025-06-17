@@ -51,7 +51,7 @@ const touristOnboarding = publicAction.create(
 
     if (pfp) {
       const { data: pfp_data, error: pfp_error } = await supabase.storage
-        .from("profile_pictures")
+        .from("profile-pictures")
         .upload(tourist_id, pfp);
 
       if (pfp_error) {
@@ -60,7 +60,7 @@ const touristOnboarding = publicAction.create(
       }
 
       const { data: pfp_url } = await supabase.storage
-        .from("profile_pictures")
+        .from("profile-pictures")
         .getPublicUrl(pfp_data.path);
 
       avatar_url = pfp_url.publicUrl;
@@ -126,7 +126,7 @@ const guideOnboarding = publicAction.create(
 
     if (pfp) {
       const { data: pfp_data, error: pfp_error } = await supabase.storage
-        .from("profile_pictures")
+        .from("profile-pictures")
         .upload(guide_id, pfp);
 
       if (pfp_error) {
@@ -135,7 +135,7 @@ const guideOnboarding = publicAction.create(
       }
 
       const { data: pfp_url } = await supabase.storage
-        .from("profile_pictures")
+        .from("profile-pictures")
         .getPublicUrl(pfp_data.path);
 
       avatar_url = pfp_url.publicUrl;
