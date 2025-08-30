@@ -181,8 +181,8 @@ export default function GuideBookings() {
                         creator={booking.creator!}
                         creatorAvatar={booking.creator_avatar}
                         formattedDuration={
-                          booking.circuit_duration
-                            ? formatCircuitDuration(booking.circuit_duration)
+                          booking.estimated_duration
+                            ? formatCircuitDuration(booking.estimated_duration)
                             : "Duration not available"
                         }
                         formattedDate={

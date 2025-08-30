@@ -27,10 +27,10 @@ const getBookings = authenticatedAction.create(
         tourist_id: bookings.tourist_id,
         booking_date: bookings.booking_date,
         total_price: bookings.total_price,
+        estimated_duration : bookings.estimated_duration,
         creator_avatar: users_additional_info.avatar_url,
         creator: users_additional_info.full_name,
         circuit_name: circuits.name,
-        estimated_duration: circuits.estimated_duration,
       })
       .from(bookings)
       .innerJoin(
@@ -86,10 +86,7 @@ const takeTrip = authenticatedAction.create(
     guide_id: z.string().uuid().optional(),
     booking_date: z.string(), // ISO string
   }),
-  async (
-    { circuit_id, guide_id, booking_date },
-    context
-  ) => {
+  async ({ circuit_id, guide_id, booking_date }, context) => {
     // Get circuit duration
     const circuit = await db
       .select({ estimated_duration: circuits.estimated_duration })
@@ -113,12 +110,9 @@ const takeTrip = authenticatedAction.create(
       guidePricePerHour = Number(guide.price_per_hour);
     }
 
-
     // Calculate total price (duration in hours * price per hour)
     const durationHours = circuit.estimated_duration / 60;
-    const totalPrice = (durationHours * guidePricePerHour).toFixed(
-      2
-    );
+    const totalPrice = (durationHours * guidePricePerHour).toFixed(2);
 
     // Insert booking
     const res = await db

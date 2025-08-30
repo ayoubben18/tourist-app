@@ -22,7 +22,7 @@ const updateAvatar = authenticatedAction.create(
         const fileName = `avatar-${context.userId}-${Date.now()}.png`;
         const { data: uploadData, error: uploadError } = await supabase
             .storage
-            .from('profile_pictures') // Make sure this bucket exists
+            .from('profile-pictures') // Make sure this bucket exists
             .upload(fileName, buffer, {
                 contentType: 'image/png',
                 upsert: true
@@ -35,7 +35,7 @@ const updateAvatar = authenticatedAction.create(
         // Get the public URL
         const { data: { publicUrl } } = await supabase
             .storage
-            .from('profile_pictures')
+            .from('profile-pictures')
             .getPublicUrl(fileName);
 
         // Update the user's avatar_url in the database
